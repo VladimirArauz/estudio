@@ -151,7 +151,7 @@ async function contenido() {
   const d = await API.get("admin.php", { seccion: "contenido", ...filtros });
   const secciones = [["apuntes", "Apuntes"], ["tareas", "Tareas"], ["examenes", "Exámenes"], ["apoyo", "Apoyo"], ["curso", "Curso"], ["entrega", "Entrega"]];
   panel.innerHTML = `
-    <form class="form__fila" data-filtros>${campoFiltro("q", "Buscar título")}${campoFiltro("seccion", "Sección", secciones)}
+    <form class="form__fila" data-filtros>${campoFiltro("q", "Buscar título")}${campoFiltro("seccion_archivo", "Sección", secciones)}
       ${campoFiltro("estado", "Estado", Object.entries(ESTADOS_ARCHIVO).map(([k, v]) => [k, v.texto]))}
       ${campoFiltro("tipo", "Tipo", Object.entries(TIPOS_ARCHIVO).map(([k, v]) => [k, v.nombre]))}</form>
     ${paginacion(d)}

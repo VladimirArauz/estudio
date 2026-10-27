@@ -66,6 +66,19 @@ switch (accion()) {
         registrar('registro', 'usuario', $id, ['rol' => $rolPedido]);
         responder(['ok' => true, 'rol' => $rolPedido, 'csrf' => $_SESSION['csrf']], 201);
 
+    case 'cambiar_password':
+        exigirPost();
+        $u = requiereRol('admin', 'profesor', 'alumno');
+        $d = entrada();
+        $nueva = (string)($d['nueva'] ?? '');
+        $hash = valor('SELECT password_hash FROM usuarios WHERE id = ?', [$u['id']]);
+        if (!password_verify((string)($d['actual'] ?? ''), $hash)) fallar('Tu contraseña actual no coincide.', 403);
+        if (mb_strlen($nueva) < 8) fallar('La contraseña nueva debe tener al menos 8 caracteres.', 422);
+        ejecutar('UPDATE usuarios SET password_hash = ? WHERE id = ?', [password_hash($nueva, PASSWORD_DEFAULT), $u['id']]);
+        session_regenerate_id(true);
+        registrar('password_cambiar', 'usuario', $u['id']);
+        responder(['ok' => true]);
+
     case 'salir':
         exigirPost();
         if (usuario()) registrar('logout', 'usuario', usuario()['id']);

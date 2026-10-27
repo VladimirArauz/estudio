@@ -56,6 +56,33 @@ formEntrar.addEventListener("submit", e => {
      ["passEntrar", v => v.length > 0, "Escribe tu contraseña."]]);
 });
 
+// Con sesión iniciada, la página muestra «Tu cuenta» con el cambio de contraseña.
+(async () => {
+  const yo = await Sesion.yo();
+  if (!yo.usuario) return;
+  document.getElementById("tituloAcceso").textContent = "Tu cuenta";
+  document.querySelector('[role="tablist"]').hidden = true;
+  formEntrar.hidden = formRegistro.hidden = true;
+  document.getElementById("cuenta").hidden = false;
+  document.getElementById("cuentaDatos").textContent = `${yo.usuario.nombre} · ${yo.usuario.email} · ${yo.rol}`;
+  const form = document.getElementById("formPassword");
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const mensaje = form.querySelector(".form__mensaje");
+    const error = validar(form, [["passActual", v => v.length > 0, "Escribe tu contraseña actual."],
+      ["passNueva", v => v.length >= 8, "La contraseña nueva debe tener al menos 8 caracteres."]]);
+    mensaje.className = "form__mensaje form__mensaje--error";
+    mensaje.textContent = error;
+    if (error) return;
+    try {
+      await API.post("auth.php", { actual: document.getElementById("passActual").value, nueva: document.getElementById("passNueva").value }, { accion: "cambiar_password" });
+      form.reset();
+      mensaje.className = "form__mensaje form__mensaje--ok";
+      mensaje.textContent = "Listo: tu contraseña cambió.";
+    } catch (err) { mensaje.textContent = err.message; }
+  });
+})();
+
 formRegistro.addEventListener("submit", e => {
   e.preventDefault();
   enviar(formRegistro, "registrar",

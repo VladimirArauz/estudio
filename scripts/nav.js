@@ -160,6 +160,7 @@ const LAMINAS = [
   if (yo.rol === "admin") extras.push(["panel.html", "panel", "Panel de control"]);
   if (yo.rol === "profesor" || yo.rol === "alumno") extras.push(["cursos.html", "curso", "Mis cursos"]);
   extras.push(["preparacion.html#desempeno", "estrella", "Mi desempeño"]);
+  extras.push(["login.html", "usuario", "Mi cuenta"]);
   caja.innerHTML = `
     <p class="rotulo">Cuenta · <b>${ROLES[yo.rol]}</b></p>
     <p class="nav__usuario">${escapar(yo.usuario.nombre)}</p>

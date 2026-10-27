@@ -22,6 +22,17 @@
 
     <div class="lamina__rejilla">
       <div class="lamina__principal pila" style="gap: var(--e-5); max-width: 32rem; grid-column: 1 / span 6">
+        <section class="pila" id="cuenta" hidden>
+          <p class="rotulo" id="cuentaDatos"></p>
+          <h2 class="lamina__titulo">Cambiar contraseña</h2>
+          <form class="form" id="formPassword" novalidate>
+            <div class="campo"><label for="passActual">Contraseña actual</label><input type="password" id="passActual" autocomplete="current-password" required></div>
+            <div class="campo"><label for="passNueva">Contraseña nueva</label><input type="password" id="passNueva" autocomplete="new-password" minlength="8" required>
+              <span class="campo__ayuda">Mínimo 8 caracteres.</span></div>
+            <p class="form__mensaje" role="alert"></p>
+            <div class="form__acciones" style="justify-content: flex-start"><button class="btn btn--secundario" type="submit">Guardar contraseña</button></div>
+          </form>
+        </section>
         <div class="pestanas" role="tablist" aria-label="Tipo de acceso">
           <button class="chip" role="tab" id="tabEntrar" aria-selected="true" aria-controls="formEntrar">Iniciar sesión</button>
           <button class="chip" role="tab" id="tabRegistro" aria-selected="false" aria-controls="formRegistro">Crear cuenta</button>

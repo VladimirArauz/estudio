@@ -53,8 +53,9 @@ if (metodo() === 'GET') {
         case 'contenido':
             $where = ['1'];
             $p = [];
-            foreach (['seccion', 'estado', 'tipo'] as $campo) {
-                if (!empty($_GET[$campo]) && preg_match('/^[a-z]+$/', $_GET[$campo])) { $where[] = "a.$campo = ?"; $p[] = $_GET[$campo]; }
+            // «seccion» ya elige la sección del panel; el filtro de archivos usa «seccion_archivo».
+            foreach (['seccion_archivo' => 'seccion', 'estado' => 'estado', 'tipo' => 'tipo'] as $param => $campo) {
+                if (!empty($_GET[$param]) && preg_match('/^[a-z]+$/', $_GET[$param])) { $where[] = "a.$campo = ?"; $p[] = $_GET[$param]; }
             }
             if ($q = texto($_GET, 'q', 100)) { $where[] = '(a.titulo LIKE ? OR a.nombre_original LIKE ?)'; $p[] = "%$q%"; $p[] = "%$q%"; }
             $w = implode(' AND ', $where);

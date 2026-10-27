@@ -27,25 +27,19 @@ switch (accion()) {
         $total = max(0, min(200, (int)($d['total'] ?? 0)));
         $aciertos = max(0, min($total, (int)($d['aciertos'] ?? 0)));
         if (!$total) fallar('El intento no tiene preguntas.', 422);
-        $examen = entero($d['examen_id'] ?? null);
-        if ($examen) {
-            // Examen de curso: solo inscritos (o su profesor) y un intento por alumno.
-            $e = uno('SELECT curso_id FROM examenes WHERE id = ? AND publicado = 1', [$examen]);
-            if (!$e || !(estaInscrito((int)$e['curso_id']) || esProfesorDe((int)$e['curso_id']))) fallar('No puedes resolver este examen.', 403);
-            if ($u['rol'] === 'alumno' && valor('SELECT 1 FROM intentos_examen WHERE examen_id = ? AND usuario_id = ?', [$examen, $u['id']])) {
-                fallar('Ya resolviste este examen; solo cuenta tu primer intento.', 409);
-            }
-        }
+        // Solo práctica personal. Los exámenes de curso se califican en el servidor
+        // (cursos.php?accion=examen_responder); aquí nunca se acepta un examen_id.
+        if (!empty($d['examen_id'])) fallar('Los exámenes de curso se entregan desde el curso.', 422);
         $detalle = json_encode($d['detalle'] ?? null, JSON_UNESCAPED_UNICODE);
         if (strlen($detalle) > 200000) $detalle = null;
         ejecutar('INSERT INTO intentos_examen (examen_id, usuario_id, modo, materia, titulo, detalle, aciertos, total, puntaje, duracion_seg)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
-            $examen, $u['id'], array_key_exists($d['modo'] ?? '', MODOS) || ($d['modo'] ?? '') === 'curso' ? $d['modo'] : 'materia',
+                  VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+            $u['id'], array_key_exists($d['modo'] ?? '', MODOS) ? $d['modo'] : 'materia',
             texto($d, 'materia', 120), texto($d, 'titulo', 200) ?? 'Examen', $detalle, $aciertos, $total,
             round($aciertos * 100 / $total, 2), isset($d['duracion']) ? max(0, (int)$d['duracion']) : null,
         ]);
         $id = (int)db()->lastInsertId();
-        registrar('examen_intento', 'intento', $id, ['aciertos' => $aciertos, 'total' => $total, 'examen_id' => $examen]);
+        registrar('examen_intento', 'intento', $id, ['aciertos' => $aciertos, 'total' => $total]);
         responder(['ok' => true, 'id' => $id], 201);
 
     case 'desempeno':

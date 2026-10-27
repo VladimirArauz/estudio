@@ -81,6 +81,7 @@
 .lamina { padding-block: var(--e-8); }
 .lamina + .lamina { padding-top: var(--e-6); }
 .lamina__rejilla { display: grid; gap: var(--e-5); }
+.lamina__rejilla > * { min-width: 0; } /* tablas anchas hacen scroll en su caja, no en la página */
 .lamina__lateral { display: flex; flex-direction: column; gap: var(--e-1); }
 .lamina__cabecera { display: flex; flex-direction: column; gap: var(--e-3); margin-bottom: var(--e-7); min-width: 0; }
 .lamina__titulo { font: 800 var(--t-xl)/.9 var(--f-display); text-transform: uppercase; letter-spacing: -.01em; }
