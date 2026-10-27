@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis cursos · Bátiz hasta la muerte</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <script src="scripts/tema-temprano.js"></script>
+</head>
+<body data-activa="apoyo" style="--sec: var(--sec-apoyo)">
+  <main id="contenido" class="contenedor" tabindex="-1">
+    <header class="cabecera-pagina">
+      <nav class="migas" aria-label="Ruta"><a href="index.html#apoyo">Lámina 02 · Apoyo</a><span>/</span><span>Mis cursos</span></nav>
+      <p class="rotulo" id="rotuloCursos">Cursos</p>
+      <h1 class="cabecera-pagina__titulo">Mis cursos</h1>
+      <div id="cotaCursos"></div>
+      <p class="lamina__lead" id="leadCursos"></p>
+    </header>
+    <div class="pila" style="gap: var(--e-7)">
+      <section class="pila" id="seccionVisitas" hidden>
+        <p class="rotulo">Tus cursos más visitados</p>
+        <ul class="barras" id="barrasVisitas"></ul>
+      </section>
+      <div class="piezas" id="listaCursos"><p class="cargando">Cargando cursos…</p></div>
+      <section class="pila" id="seccionPostulaciones" hidden>
+        <p class="rotulo">Mis postulaciones como profesor</p>
+        <div class="tabla-caja"><table class="tabla"><thead><tr><th>Materia</th><th>Estado</th><th>Fecha</th></tr></thead><tbody id="tablaPostulaciones"></tbody></table></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="scripts/util.js"></script>
+  <script src="scripts/api.js"></script>
+  <script src="scripts/nav.js"></script>
+  <script src="scripts/analitica.js"></script>
+  <script src="scripts/cursos.js"></script>
+</body>
+</html>

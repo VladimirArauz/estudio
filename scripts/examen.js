@@ -89,10 +89,24 @@ const Examen = (() => {
       const sinResponder = lista.filter((_, i) => !form.querySelector(`[name=p${i}]:checked`)).length;
       if (sinResponder && !porTiempo && !confirm(`Te faltan ${sinResponder} preguntas. ¿Calificar de todos modos?`)) return;
       clearInterval(reloj);
+      const segundos = Math.round((Date.now() - inicio) / 1000);
+      const elegidas = lista.map((_, i) => {
+        const marcada = form.querySelector(`[name=p${i}]:checked`);
+        return marcada ? Number(marcada.value) : null;
+      });
+      // Exámenes de curso: el servidor califica y devuelve las respuestas correctas.
+      if (meta.calificar) {
+        try {
+          const r = await meta.calificar(elegidas, segundos);
+          lista.forEach((p, i) => { p.correcta = r.correctas[i]; p.explicacion = r.explicaciones[i]; });
+        } catch (err) {
+          form.querySelector(".form__mensaje").textContent = err.message;
+          return;
+        }
+      }
       let aciertos = 0;
       const detalle = lista.map((p, i) => {
-        const marcada = form.querySelector(`[name=p${i}]:checked`);
-        const elegida = marcada ? Number(marcada.value) : null;
+        const elegida = elegidas[i];
         const bien = elegida === p.correcta;
         if (bien) aciertos++;
         const li = form.querySelector(`.pregunta[data-i="${i}"]`);
@@ -109,9 +123,8 @@ const Examen = (() => {
         return { pregunta: p.pregunta, elegida, correcta: p.correcta, tema: p.tema || null };
       });
       form.querySelector('[type="submit"]').remove();
-      const segundos = Math.round((Date.now() - inicio) / 1000);
       resultado(contenedor, aciertos, lista.length, segundos);
-      notaGuardado(contenedor, await guardar(meta, aciertos, lista.length, segundos, detalle));
+      if (!meta.calificar) notaGuardado(contenedor, await guardar(meta, aciertos, lista.length, segundos, detalle));
       meta.alTerminar && meta.alTerminar({ aciertos, total: lista.length });
     }
     form.addEventListener("submit", e => { e.preventDefault(); calificar(); });

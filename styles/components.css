@@ -295,7 +295,7 @@ button.chip:hover, a.chip:hover { border-color: var(--sec); color: var(--fg); }
 .barra { display: grid; grid-template-columns: minmax(0, 10rem) 1fr auto; gap: var(--e-3); align-items: center; font-size: var(--t-sm); }
 .barra__nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg-2); }
 .barra__pista { height: 10px; background: var(--superficie-2); border-radius: var(--radio-s); overflow: hidden; }
-.barra__relleno { height: 100%; width: 100%; background: var(--sec); transform-origin: left; transform: scaleX(var(--v, 0)); transition: transform var(--d-media) var(--ease-salida); }
+.barra__relleno { display: block; height: 100%; width: 100%; background: var(--sec); transform-origin: left; transform: scaleX(var(--v, 0)); transition: transform var(--d-media) var(--ease-salida); }
 .barra__valor { font-family: var(--f-tecnica); font-variant-numeric: tabular-nums; color: var(--fg); }
 
 /* Estrellas de evaluación. */

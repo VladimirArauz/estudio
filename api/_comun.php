@@ -74,23 +74,34 @@ function exigirPost(): void {
     if (!hash_equals($_SESSION['csrf'], (string)$token)) fallar('La sesión expiró. Recarga la página e intenta de nuevo.', 419);
 }
 
-// Usuario de la sesión, o null si es invitado. Se relee de la BD para reflejar suspensiones y cambios de rol.
+// Usuario de la sesión, o null si es invitado. Se relee de la BD cada 60 s (la BD está lejos)
+// para reflejar suspensiones y cambios de rol sin pagar una consulta en cada petición.
 function usuario(): ?array {
     static $cache = false;
     if ($cache !== false) return $cache;
     $cache = null;
-    if (!empty($_SESSION['uid'])) {
-        $st = db()->prepare('SELECT id, nombre, email, rol, estado FROM usuarios WHERE id = ?');
-        $st->execute([$_SESSION['uid']]);
-        $u = $st->fetch();
-        if ($u && $u['estado'] === 'activo') {
-            $u['id'] = (int)$u['id'];
-            $cache = $u;
-        } else {
-            unset($_SESSION['uid']);
-        }
+    if (empty($_SESSION['uid'])) return null;
+    $guardado = $_SESSION['usuario'] ?? null;
+    if ($guardado && $guardado['id'] === (int)$_SESSION['uid'] && time() - ($_SESSION['usuario_t'] ?? 0) < 60) {
+        return $cache = $guardado;
+    }
+    $st = db()->prepare('SELECT id, nombre, email, rol, estado FROM usuarios WHERE id = ?');
+    $st->execute([$_SESSION['uid']]);
+    $u = $st->fetch();
+    if ($u && $u['estado'] === 'activo') {
+        $u['id'] = (int)$u['id'];
+        $_SESSION['usuario'] = $u;
+        $_SESSION['usuario_t'] = time();
+        $cache = $u;
+    } else {
+        unset($_SESSION['uid'], $_SESSION['usuario']);
     }
     return $cache;
+}
+
+// Tras cambiar rol o estado de alguien, su sesión debe releerlo.
+function olvidarUsuarioEnSesion(): void {
+    unset($_SESSION['usuario'], $_SESSION['usuario_t']);
 }
 
 function rol(): string { return usuario()['rol'] ?? 'invitado'; }
@@ -136,15 +147,18 @@ function ejecutar(string $sql, array $params = []): int {
 }
 
 // ¿Este usuario es el profesor del curso (o admin)?
+// Si el endpoint ya calculó el acceso al curso, se reutiliza (ver api/cursos.php).
 function esProfesorDe(int $cursoId): bool {
     $u = usuario();
     if (!$u) return false;
     if ($u['rol'] === 'admin') return true;
+    if (isset($GLOBALS['acceso_curso'][$cursoId])) return $GLOBALS['acceso_curso'][$cursoId]['profesor'];
     return (bool)valor('SELECT 1 FROM cursos WHERE id = ? AND profesor_id = ?', [$cursoId, $u['id']]);
 }
 
 function estaInscrito(int $cursoId): bool {
     $u = usuario();
     if (!$u) return false;
+    if (isset($GLOBALS['acceso_curso'][$cursoId])) return $GLOBALS['acceso_curso'][$cursoId]['inscrito'];
     return (bool)valor('SELECT 1 FROM inscripciones WHERE curso_id = ? AND alumno_id = ?', [$cursoId, $u['id']]);
 }

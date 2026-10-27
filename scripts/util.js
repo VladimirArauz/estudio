@@ -45,6 +45,13 @@ function imagenMateria(materia) {
   return `<span class="pieza__simbolo" aria-hidden="true">${escapar(materia.simbolo || materia.nombre.slice(0, 3))}</span>`;
 }
 
+// Calificación de 1 a 5 como estrellas.
+function estrellas(valor) {
+  const n = Math.round(Number(valor) || 0);
+  return `<span class="estrellas" aria-label="${n} de 5 estrellas">${[1, 2, 3, 4, 5].map(i =>
+    `<svg class="icono icono--16 ${i <= n ? "estrella-llena" : ""}" viewBox="0 0 24 24" aria-hidden="true">${ICONOS.estrella}</svg>`).join("")}</span>`;
+}
+
 // Códigos de pieza: EST-001, APO-014…
 function codigo(prefijo, n) {
   return `${prefijo}-${String(n).padStart(3, "0")}`;
@@ -54,7 +61,9 @@ const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "o
 // Formato de fecha de la voz del sitio: «14 nov 2026», con hora «13:00 h».
 function fecha(valor, conHora = false) {
   if (!valor) return "—";
-  const d = new Date(String(valor).replace(" ", "T"));
+  // Sin hora, «2026-10-26» se leería como medianoche UTC (el día anterior en México): se fuerza hora local.
+  const texto0 = String(valor);
+  const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(texto0) ? texto0 + "T00:00" : texto0.replace(" ", "T"));
   if (isNaN(d)) return String(valor);
   let texto = `${d.getDate()} ${MESES[d.getMonth()]} ${d.getFullYear()}`;
   if (conHora) texto += ` · ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")} h`;
