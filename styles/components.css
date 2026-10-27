@@ -337,6 +337,29 @@ button.chip:hover, a.chip:hover { border-color: var(--sec); color: var(--fg); }
 /* Cargando */
 .cargando { font: 400 var(--t-xs)/1.4 var(--f-tecnica); letter-spacing: .12em; text-transform: uppercase; color: var(--fg-3); }
 
+/* Pregunta de examen: opciones como piezas pequeñas con letra mono. */
+.examen__lista { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--e-5); }
+.pregunta fieldset { border: 1px solid var(--línea); border-radius: var(--radio-m); background: var(--superficie); padding: var(--e-5); display: flex; flex-direction: column; gap: var(--e-4); min-width: 0; }
+.pregunta legend { display: contents; }
+.pregunta__texto { display: block; font: 700 var(--t-md)/1.35 var(--f-texto); max-width: var(--ancho-lectura); overflow-wrap: anywhere; }
+.pregunta--bien fieldset { border-top: 2px solid var(--ok); }
+.pregunta--mal fieldset { border-top: 2px solid var(--error); }
+.pregunta__opciones { display: grid; gap: var(--e-2); }
+.opcion { display: flex; align-items: center; gap: var(--e-3); min-height: 44px; padding: var(--e-2) var(--e-3); border: 1px solid var(--línea); border-radius: var(--radio-m); cursor: pointer;
+  transition: border-color var(--d-micro), background-color var(--d-micro); }
+.opcion:hover { border-color: var(--sec); }
+.opcion input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.opcion__letra { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid var(--línea-fuerte); border-radius: var(--radio-s); font: 600 var(--t-xs)/1 var(--f-tecnica); color: var(--fg-2); }
+.opcion:has(input:checked) { border-color: var(--sec); background: color-mix(in srgb, var(--sec) 12%, transparent); }
+.opcion:has(input:checked) .opcion__letra { background: var(--sec); color: var(--bg); border-color: var(--sec); }
+.opcion:has(input:focus-visible) { outline: 2px solid var(--acento); outline-offset: 2px; }
+.opcion--correcta { border-color: var(--ok) !important; background: color-mix(in srgb, var(--ok) 12%, transparent) !important; }
+.opcion--incorrecta { border-color: var(--error) !important; background: color-mix(in srgb, var(--error) 10%, transparent) !important; }
+.opcion:has(input:disabled) { cursor: default; }
+.pregunta__explicacion { display: flex; flex-direction: column; gap: var(--e-2); align-items: flex-start; color: var(--fg-2); }
+.cronometro { position: sticky; top: var(--e-3); z-index: 2; align-self: flex-start; padding: var(--e-2) var(--e-3); background: var(--superficie); border: 1px solid var(--línea-fuerte); border-radius: var(--radio-s); }
+.tarjeta-repaso__reverso { padding-top: var(--e-3); border-top: 1px dashed var(--línea-fuerte); color: var(--fg); }
+
 /* Reproductor y visor (vistas generadas). */
 .medio { width: 100%; background: var(--azul-noche); border: 1px solid var(--línea); border-radius: var(--radio-m); }
 audio.medio { background: none; border: 0; }

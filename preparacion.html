@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preparación · Bátiz hasta la muerte</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <script src="scripts/tema-temprano.js"></script>
+</head>
+<body data-activa="preparacion" style="--sec: var(--sec-preparacion)">
+  <main id="contenido" class="contenedor" tabindex="-1">
+    <header class="cabecera-pagina">
+      <nav class="migas" aria-label="Ruta"><a href="index.html#preparacion">Lámina 03 · Preparación</a><span>/</span><span>Generador</span></nav>
+      <p class="rotulo">Lámina 03 / 03 · <b>PRE</b> · Examen de admisión al nivel superior</p>
+      <h1 class="cabecera-pagina__titulo">Preparación</h1>
+      <div class="cota" aria-hidden="true"><span class="cota__linea"></span><span class="cota__medida"><span data-contar="5">5</span> modos de práctica</span></div>
+      <p class="lamina__lead">Elige un modo y una materia. La IA arma un examen nuevo con explicación de cada respuesta.</p>
+      <div class="chips"><span class="chip" id="estadoIa">Verificando IA…</span></div>
+    </header>
+
+    <div class="lamina__rejilla">
+      <div class="lamina__principal pila" style="gap: var(--e-8); grid-column: 1 / -1">
+
+        <section class="pila" aria-labelledby="tituloGenerar">
+          <p class="rotulo" id="tituloGenerar">Paso 01 · Configura tu práctica</p>
+          <form class="form" id="formGenerar">
+            <fieldset class="campo" style="border: 0; padding: 0">
+              <legend class="campo__etiqueta">Modo</legend>
+              <div class="chips" id="modos" role="radiogroup"></div>
+              <span class="campo__ayuda" id="ayudaModo"></span>
+            </fieldset>
+            <div class="form__fila">
+              <div class="campo">
+                <label for="materia">Materia</label>
+                <select id="materia"></select>
+              </div>
+              <div class="campo">
+                <label for="tema">Tema (opcional)</label>
+                <input type="text" id="tema" maxlength="120" placeholder="Ej. ecuaciones cuadráticas">
+              </div>
+              <div class="campo">
+                <label for="nivel">Dificultad</label>
+                <select id="nivel">
+                  <option value="basico">Básica</option>
+                  <option value="intermedio" selected>Intermedia</option>
+                  <option value="avanzado">Avanzada</option>
+                </select>
+              </div>
+            </div>
+            <div class="fila">
+              <button class="btn btn--primario" type="submit" id="botonGenerar">Generar examen</button>
+              <button class="btn btn--terciario" type="button" id="otraVariante" hidden>Generar otras preguntas</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="pila" id="practica" aria-labelledby="tituloPractica" hidden>
+          <div class="herramientas">
+            <p class="rotulo" id="tituloPractica">Paso 02 · Resuelve</p>
+            <span class="chip" id="origen"></span>
+          </div>
+          <h2 class="lamina__titulo" id="tituloExamen"></h2>
+          <div id="avisoOrigen"></div>
+          <div id="contenedorExamen"></div>
+        </section>
+
+        <section class="pila" id="desempeno" aria-labelledby="tituloDesempeno">
+          <p class="rotulo">Paso 03 · Mide tu avance</p>
+          <h2 class="lamina__titulo" id="tituloDesempeno">Mi desempeño</h2>
+          <div id="contenidoDesempeno"><p class="cargando">Cargando…</p></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="scripts/util.js"></script>
+  <script src="scripts/api.js"></script>
+  <script src="scripts/nav.js"></script>
+  <script src="scripts/analitica.js"></script>
+  <script src="scripts/banco.js"></script>
+  <script src="scripts/examen.js"></script>
+  <script src="scripts/preparacion.js"></script>
+</body>
+</html>
