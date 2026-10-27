@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estudio</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f4f6f9;
+      color: #222;
+    }
+    .menu-btn {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      z-index: 20;
+      background: #2c3e50;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 22px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 240px;
+      height: 100%;
+      background: #2c3e50;
+      color: #fff;
+      padding-top: 70px;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      z-index: 10;
+    }
+    .sidebar.abierto { transform: translateX(0); }
+    .seccion {
+      width: 100%;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 18px;
+      text-align: left;
+      padding: 14px 20px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+    }
+    .seccion:hover { background: #34495e; }
+    .flecha { transition: transform 0.3s; }
+    .seccion.abierta .flecha { transform: rotate(90deg); }
+    .submenu {
+      list-style: none;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      background: #233140;
+    }
+    .submenu.abierto { max-height: 200px; }
+    .submenu a {
+      display: block;
+      padding: 10px 36px;
+      color: #cfd8e3;
+      text-decoration: none;
+    }
+    .submenu a:hover { background: #2c3e50; color: #fff; }
+    main {
+      padding: 80px 24px 24px;
+      transition: margin-left 0.3s ease;
+    }
+    main.desplazado { margin-left: 240px; }
+    h1 { margin-bottom: 12px; color: #2c3e50; }
+    .oculto { display: none; }
+
+    /* Tarjetas de Apoyo */
+    .tarjetas {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+      margin-top: 16px;
+    }
+    .tarjeta {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      text-align: center;
+      border: 3px solid transparent;
+      transition: border-color 0.3s;
+    }
+    .tarjeta.resaltada { border-color: #2980b9; }
+    .tarjeta svg { display: block; width: 100%; height: 130px; }
+    .tarjeta .cuerpo { padding: 14px 16px 18px; }
+    .tarjeta h2 { font-size: 20px; color: #2c3e50; }
+    .tarjeta .etiqueta {
+      font-size: 14px;
+      color: #2980b9;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .tarjeta .dato { margin: 4px 0; color: #555; }
+    .tarjeta .dato b { color: #222; }
+    .btn-apoyo {
+      margin-top: 12px;
+      background: #2980b9;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 24px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .btn-apoyo:hover { background: #1f6391; }
+
+    @media (max-width: 700px) {
+      main.desplazado { margin-left: 0; }
+      .tarjetas { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <button class="menu-btn" id="menuBtn" aria-label="Abrir menú">&#9776;</button>
+
+  <nav class="sidebar" id="sidebar">
+    <button class="seccion" data-vista="vistaEstudio">
+      Estudio <span class="flecha">&#9656;</span>
+    </button>
+    <ul class="submenu">
+      <li><a href="#">Apuntes</a></li>
+      <li><a href="#">Tareas</a></li>
+      <li><a href="#">Exámenes</a></li>
+    </ul>
+
+    <button class="seccion" data-vista="vistaApoyo">
+      Apoyo <span class="flecha">&#9656;</span>
+    </button>
+    <ul class="submenu" id="submenuApoyo"></ul>
+  </nav>
+
+  <main id="contenido">
+    <section id="vistaEstudio">
+      <h1>Estudio</h1>
+      <p>Bienvenido a tu sección de estudio. Usa el menú de la izquierda para navegar.</p>
+    </section>
+
+    <section id="vistaApoyo" class="oculto">
+      <h1>Apoyo</h1>
+      <p>Elige la materia en la que necesitas apoyo.</p>
+      <div class="tarjetas" id="tarjetas"></div>
+    </section>
+  </main>
+
+  <script src="materias.js"></script>
+  <script>
+    const menuBtn = document.getElementById("menuBtn");
+    const sidebar = document.getElementById("sidebar");
+    const contenido = document.getElementById("contenido");
+    const submenuApoyo = document.getElementById("submenuApoyo");
+    const tarjetas = document.getElementById("tarjetas");
+
+    materias.forEach(materia => {
+      submenuApoyo.innerHTML += `<li><a href="#" data-materia="${materia.id}">${materia.nombre}</a></li>`;
+      tarjetas.innerHTML += `
+        <div class="tarjeta" id="tarjeta-${materia.id}">
+          ${imagenMateria(materia)}
+          <div class="cuerpo">
+            <h2>${materia.nombre}</h2>
+            <div class="etiqueta">Apoyo</div>
+            <p class="dato">Apuntes: <b>${materia.apuntes}</b></p>
+            <p class="dato">Asesores: <b>${materia.asesores.length}</b></p>
+            <button class="btn-apoyo" data-materia="${materia.id}">Apoyo</button>
+          </div>
+        </div>`;
+    });
+
+    function mostrarVista(id) {
+      document.querySelectorAll("main section").forEach(s => s.classList.add("oculto"));
+      document.getElementById(id).classList.remove("oculto");
+    }
+
+    menuBtn.addEventListener("click", () => {
+      sidebar.classList.toggle("abierto");
+      contenido.classList.toggle("desplazado");
+    });
+
+    document.querySelectorAll(".seccion").forEach(seccion => {
+      seccion.addEventListener("click", () => {
+        seccion.classList.toggle("abierta");
+        seccion.nextElementSibling.classList.toggle("abierto");
+        mostrarVista(seccion.dataset.vista);
+      });
+    });
+
+    // El botón "Apoyo" abre la página de la materia en una ventana nueva.
+    tarjetas.addEventListener("click", e => {
+      const boton = e.target.closest(".btn-apoyo");
+      if (!boton) return;
+      window.open("materia.html?m=" + boton.dataset.materia, "_blank");
+    });
+
+    submenuApoyo.addEventListener("click", e => {
+      const enlace = e.target.closest("a");
+      if (!enlace) return;
+      e.preventDefault();
+      mostrarVista("vistaApoyo");
+      document.querySelectorAll(".tarjeta").forEach(t => t.classList.remove("resaltada"));
+      const tarjeta = document.getElementById("tarjeta-" + enlace.dataset.materia);
+      tarjeta.classList.add("resaltada");
+      tarjeta.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  </script>
+</body>
+</html>

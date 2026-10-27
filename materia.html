@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apoyo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f4f6f9;
+      color: #222;
+    }
+    header {
+      position: relative;
+      color: #fff;
+      overflow: hidden;
+    }
+    header svg { display: block; width: 100%; height: 140px; }
+    header .titulo {
+      position: absolute;
+      left: 24px;
+      bottom: 16px;
+    }
+    header h1 { font-size: 30px; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
+    header p { font-weight: bold; opacity: 0.9; }
+    main { padding: 24px; max-width: 900px; margin: 0 auto; }
+    .oculto { display: none; }
+
+    /* Recuadros Asesores / Material */
+    .recuadros {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .recuadro {
+      background: #fff;
+      border: none;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      padding: 36px 20px;
+      font-size: 22px;
+      font-weight: bold;
+      color: #2c3e50;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .recuadro:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    }
+    .recuadro .icono { display: block; font-size: 44px; margin-bottom: 10px; }
+
+    .volver {
+      background: none;
+      border: none;
+      color: #2980b9;
+      font-size: 16px;
+      cursor: pointer;
+      margin-bottom: 16px;
+    }
+    h2 { color: #2c3e50; margin-bottom: 14px; }
+
+    /* Barra de pestañas del material */
+    .pestanas {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      border-bottom: 2px solid #dfe4ea;
+      margin-bottom: 16px;
+    }
+    .pestana {
+      background: none;
+      border: none;
+      padding: 10px 16px;
+      font-size: 16px;
+      color: #555;
+      cursor: pointer;
+      white-space: nowrap;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+    }
+    .pestana.activa { color: #2980b9; border-bottom-color: #2980b9; font-weight: bold; }
+
+    .lista { list-style: none; }
+    .lista li {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .lista .icono { font-size: 22px; }
+    .vacio { color: #777; }
+
+    @media (max-width: 600px) {
+      .recuadros { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header id="encabezado"></header>
+
+  <main>
+    <section id="vistaInicio" class="recuadros">
+      <button class="recuadro" data-vista="vistaAsesores">
+        <span class="icono">👩‍🏫</span>Asesores
+      </button>
+      <button class="recuadro" data-vista="vistaMaterial">
+        <span class="icono">📚</span>Material
+      </button>
+    </section>
+
+    <section id="vistaAsesores" class="oculto">
+      <button class="volver">← Volver</button>
+      <h2>Asesores</h2>
+      <ul class="lista" id="listaAsesores"></ul>
+    </section>
+
+    <section id="vistaMaterial" class="oculto">
+      <button class="volver">← Volver</button>
+      <h2>Material de apoyo</h2>
+      <nav class="pestanas" id="pestanas"></nav>
+      <ul class="lista" id="listaMaterial"></ul>
+    </section>
+  </main>
+
+  <script src="materias.js"></script>
+  <script>
+    const tipos = [
+      { id: "documentos", nombre: "Documentos", icono: "📄" },
+      { id: "videos", nombre: "Videos", icono: "🎬" },
+      { id: "imagenes", nombre: "Imágenes", icono: "🖼️" },
+      { id: "audios", nombre: "Audios", icono: "🎧" },
+      { id: "otros", nombre: "Otros", icono: "📦" }
+    ];
+
+    const id = new URLSearchParams(location.search).get("m");
+    const materia = materias.find(m => m.id === id);
+    const encabezado = document.getElementById("encabezado");
+
+    if (!materia) {
+      document.querySelector("main").innerHTML = "<h2>Materia no encontrada</h2>";
+    } else {
+      document.title = "Apoyo – " + materia.nombre;
+      encabezado.innerHTML = `
+        ${imagenMateria(materia)}
+        <div class="titulo"><h1>${materia.nombre}</h1><p>Apoyo</p></div>`;
+
+      document.getElementById("listaAsesores").innerHTML = materia.asesores
+        .map(a => `<li><span class="icono">👤</span>${a}</li>`).join("");
+
+      const pestanas = document.getElementById("pestanas");
+      pestanas.innerHTML = tipos
+        .map(t => `<button class="pestana" data-tipo="${t.id}">${t.nombre}</button>`).join("");
+
+      function mostrarTipo(tipoId) {
+        const tipo = tipos.find(t => t.id === tipoId);
+        const elementos = materia.material[tipoId] || [];
+        pestanas.querySelectorAll(".pestana").forEach(p =>
+          p.classList.toggle("activa", p.dataset.tipo === tipoId));
+        document.getElementById("listaMaterial").innerHTML = elementos.length
+          ? elementos.map(e => `<li><span class="icono">${tipo.icono}</span>${e}</li>`).join("")
+          : `<li class="vacio">Todavía no hay ${tipo.nombre.toLowerCase()}.</li>`;
+      }
+
+      pestanas.addEventListener("click", e => {
+        const p = e.target.closest(".pestana");
+        if (p) mostrarTipo(p.dataset.tipo);
+      });
+
+      function mostrarVista(vistaId) {
+        document.querySelectorAll("main section").forEach(s => s.classList.add("oculto"));
+        document.getElementById(vistaId).classList.remove("oculto");
+      }
+
+      document.querySelectorAll(".recuadro").forEach(r =>
+        r.addEventListener("click", () => {
+          if (r.dataset.vista === "vistaMaterial") mostrarTipo("documentos");
+          mostrarVista(r.dataset.vista);
+        }));
+
+      document.querySelectorAll(".volver").forEach(b =>
+        b.addEventListener("click", () => mostrarVista("vistaInicio")));
+    }
+  </script>
+</body>
+</html>
