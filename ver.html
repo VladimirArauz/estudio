@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ver archivo · Bátiz hasta la muerte</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/vista.css">
+  <script src="scripts/tema-temprano.js"></script>
+</head>
+<body data-pagina="ver">
+  <main id="contenido" class="contenedor" tabindex="-1">
+    <header class="cabecera-pagina" id="encabezado">
+      <nav class="migas" aria-label="Ruta" id="migas"><a href="index.html">Inicio</a></nav>
+      <p class="cargando">Cargando archivo…</p>
+    </header>
+    <div id="vista" class="pila" style="gap: var(--e-6)"></div>
+  </main>
+
+  <script src="scripts/util.js"></script>
+  <script src="scripts/api.js"></script>
+  <script src="scripts/nav.js"></script>
+  <script src="scripts/analitica.js"></script>
+  <script src="scripts/ver.js"></script>
+</body>
+</html>

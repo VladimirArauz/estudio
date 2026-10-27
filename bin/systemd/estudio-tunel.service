@@ -1,0 +1,14 @@
+[Unit]
+Description=Estudio: túnel SSH hacia la BD de IONOS (127.0.0.1:3307)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=aumf-ubuntu-080704
+WorkingDirectory=/home/aumf-ubuntu-080704/estudio
+ExecStart=/home/aumf-ubuntu-080704/estudio/bin/tunel.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,19 @@
+[Unit]
+Description=Estudio: procesador de archivos subidos (PDF, Word, audio, video…)
+After=estudio-tunel.service
+Wants=estudio-tunel.service
+
+[Service]
+User=aumf-ubuntu-080704
+Group=daemon
+UMask=0002
+WorkingDirectory=/home/aumf-ubuntu-080704/estudio
+Environment=HF_HOME=/home/aumf-ubuntu-080704/estudio/procesador/.cache
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/aumf-ubuntu-080704/estudio/procesador/.venv/bin/python procesador/worker.py
+Restart=always
+RestartSec=10
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

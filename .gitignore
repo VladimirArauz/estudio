@@ -14,3 +14,4 @@ storage/generados/*
 procesador/.venv/
 __pycache__/
 *.pyc
+procesador/.cache/
