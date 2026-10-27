@@ -3,288 +3,95 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Apoyo</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: "Segoe UI", Arial, sans-serif;
-      background: #f4f6f9;
-      color: #222;
-    }
-    header {
-      position: relative;
-      color: #fff;
-      overflow: hidden;
-    }
-    header svg { display: block; width: 100%; height: 140px; }
-    header .titulo {
-      position: absolute;
-      left: 24px;
-      bottom: 16px;
-    }
-    header h1 { font-size: 30px; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
-    header p { font-weight: bold; opacity: 0.9; }
-    main { padding: 24px; max-width: 900px; margin: 0 auto; }
-    .oculto { display: none; }
-
-    /* Recuadros Asesores / Material */
-    .recuadros {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-    .recuadro {
-      background: #fff;
-      border: none;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      padding: 36px 20px;
-      font-size: 22px;
-      font-weight: bold;
-      color: #2c3e50;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .recuadro:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-    }
-    .recuadro .icono { display: block; font-size: 44px; margin-bottom: 10px; }
-
-    .volver {
-      background: none;
-      border: none;
-      color: #2980b9;
-      font-size: 16px;
-      cursor: pointer;
-      margin-bottom: 16px;
-    }
-    h2 { color: #2c3e50; margin-bottom: 14px; }
-
-    /* Barra de pestañas del material */
-    .pestanas {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      border-bottom: 2px solid #dfe4ea;
-      margin-bottom: 16px;
-    }
-    .pestana {
-      background: none;
-      border: none;
-      padding: 10px 16px;
-      font-size: 16px;
-      color: #555;
-      cursor: pointer;
-      white-space: nowrap;
-      border-bottom: 3px solid transparent;
-      margin-bottom: -2px;
-    }
-    .pestana.activa { color: #2980b9; border-bottom-color: #2980b9; font-weight: bold; }
-
-    .lista { list-style: none; }
-    .lista li {
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-      padding: 14px 16px;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .lista .icono { font-size: 22px; }
-    .vacio { color: #777; }
-    .lista .nombre { flex: 1; word-break: break-word; }
-    .accion {
-      background: #2980b9;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 6px 12px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .accion:hover { background: #1f6391; }
-    .accion.borrar { background: #c0392b; }
-    .accion.borrar:hover { background: #a93226; }
-
-    /* Botón para subir material */
-    .agregar {
-      position: fixed;
-      right: 24px;
-      bottom: 24px;
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      border: none;
-      background: #2980b9;
-      color: #fff;
-      font-size: 34px;
-      line-height: 1;
-      cursor: pointer;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-    }
-    .agregar:hover { background: #1f6391; }
-
-    @media (max-width: 600px) {
-      .recuadros { grid-template-columns: 1fr; }
-    }
-  </style>
+  <title>Apoyo · Bátiz hasta la muerte</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <script src="scripts/tema-temprano.js"></script>
 </head>
-<body>
-  <header id="encabezado"></header>
+<body data-activa="apoyo" style="--sec: var(--sec-apoyo)">
+  <main id="contenido" class="contenedor" tabindex="-1">
+    <header class="cabecera-pagina" id="encabezado">
+      <nav class="migas" aria-label="Ruta"><a href="index.html#apoyo">Lámina 02 · Apoyo</a><span>/</span><span id="migaMateria">Materia</span></nav>
+      <p class="cargando">Cargando materia…</p>
+    </header>
 
-  <main>
-    <section id="vistaInicio" class="recuadros">
-      <button class="recuadro" data-vista="vistaAsesores">
-        <span class="icono">👩‍🏫</span>Asesores
-      </button>
-      <button class="recuadro" data-vista="vistaMaterial">
-        <span class="icono">📚</span>Material
-      </button>
-    </section>
+    <div class="pila" style="gap: var(--e-6)">
+      <div class="pestanas" role="tablist" aria-label="Secciones de la materia" id="vistas">
+        <button class="chip" role="tab" data-vista="vistaAsesores" aria-selected="true">Asesores</button>
+        <button class="chip" role="tab" data-vista="vistaMaterial" aria-selected="false">Material</button>
+        <button class="chip" role="tab" data-vista="vistaCursos" aria-selected="false">Cursos</button>
+      </div>
 
-    <section id="vistaAsesores" class="oculto">
-      <button class="volver">← Volver</button>
-      <h2>Asesores</h2>
-      <ul class="lista" id="listaAsesores"></ul>
-    </section>
+      <section id="vistaAsesores" role="tabpanel" class="pila">
+        <h2 class="lamina__titulo">Asesores</h2>
+        <ul class="filas" id="listaAsesores"></ul>
+      </section>
 
-    <section id="vistaMaterial" class="oculto">
-      <button class="volver">← Volver</button>
-      <h2>Material de apoyo</h2>
-      <nav class="pestanas" id="pestanas"></nav>
-      <ul class="lista" id="listaMaterial"></ul>
-    </section>
+      <section id="vistaMaterial" role="tabpanel" class="pila" hidden>
+        <div class="herramientas">
+          <h2 class="lamina__titulo">Material de apoyo</h2>
+          <button class="btn btn--secundario" type="button" id="agregar" data-rol="alumno profesor admin" hidden>Subir material</button>
+        </div>
+        <p class="nota" data-rol="invitado" hidden><span class="rotulo">Nota</span><span><a href="login.html">Inicia sesión</a> para subir material de apoyo.</span></p>
+        <nav class="pestanas" id="pestanas" aria-label="Tipo de material"></nav>
+        <ul class="filas" id="listaMaterial"></ul>
+      </section>
+
+      <section id="vistaCursos" role="tabpanel" class="pila" hidden>
+        <div class="herramientas">
+          <h2 class="lamina__titulo">Cursos</h2>
+          <div class="fila" id="accionesProfesor" data-rol="profesor admin" hidden></div>
+        </div>
+        <div class="piezas" id="listaCursos"></div>
+      </section>
+    </div>
   </main>
 
-  <button class="agregar oculto" id="agregar" title="Subir material" aria-label="Subir material">+</button>
-  <input type="file" id="selector" multiple hidden>
+  <dialog class="modal" id="dialogoPostular">
+    <form class="modal__cuerpo form" id="formPostular">
+      <p class="rotulo">Apoyo · Postulación</p>
+      <h2 class="modal__titulo">Postularme como profesor</h2>
+      <div class="campo">
+        <label for="mensajePostular">¿Por qué quieres dar esta materia?</label>
+        <textarea id="mensajePostular" maxlength="1000" required placeholder="Tu experiencia, horarios disponibles, temas que dominas…"></textarea>
+      </div>
+      <p class="form__mensaje form__mensaje--error" role="alert"></p>
+      <div class="form__acciones">
+        <button type="button" class="btn btn--secundario" data-cerrar>Cancelar</button>
+        <button type="submit" class="btn btn--secundario">Enviar postulación</button>
+      </div>
+    </form>
+  </dialog>
 
-  <script src="materias.js"></script>
-  <script src="db.js"></script>
-  <script>
-    const tipos = [
-      { id: "documentos", nombre: "Documentos", icono: "📄" },
-      { id: "videos", nombre: "Videos", icono: "🎬" },
-      { id: "imagenes", nombre: "Imágenes", icono: "🖼️" },
-      { id: "audios", nombre: "Audios", icono: "🎧" },
-      { id: "otros", nombre: "Otros", icono: "📦" }
-    ];
+  <dialog class="modal" id="dialogoCurso">
+    <form class="modal__cuerpo form" id="formCurso">
+      <p class="rotulo">Apoyo · Nuevo curso</p>
+      <h2 class="modal__titulo">Crear curso</h2>
+      <div class="campo">
+        <label for="tituloCurso">Nombre del curso</label>
+        <input type="text" id="tituloCurso" maxlength="160" required placeholder="Ej. Álgebra para el examen de admisión">
+      </div>
+      <div class="campo">
+        <label for="descripcionCurso">Descripción</label>
+        <textarea id="descripcionCurso" maxlength="2000" placeholder="Qué vas a enseñar, horarios, forma de evaluar…"></textarea>
+      </div>
+      <p class="form__mensaje form__mensaje--error" role="alert"></p>
+      <div class="form__acciones">
+        <button type="button" class="btn btn--secundario" data-cerrar>Cancelar</button>
+        <button type="submit" class="btn btn--secundario">Crear curso</button>
+      </div>
+    </form>
+  </dialog>
 
-    // Decide en qué pestaña va un archivo subido.
-    function tipoDeArchivo(archivo) {
-      if (archivo.tipo.startsWith("video/")) return "videos";
-      if (archivo.tipo.startsWith("image/")) return "imagenes";
-      if (archivo.tipo.startsWith("audio/")) return "audios";
-      if (/pdf|word|document|text|sheet|excel|presentation|powerpoint/.test(archivo.tipo) ||
-          /\.(pdf|docx?|xlsx?|pptx?|txt)$/i.test(archivo.nombre)) return "documentos";
-      return "otros";
-    }
-
-    const id = new URLSearchParams(location.search).get("m");
-    const encabezado = document.getElementById("encabezado");
-    const pestanas = document.getElementById("pestanas");
-    const listaMaterial = document.getElementById("listaMaterial");
-    let materia;
-    let archivos = [];
-    let tipoActual = "documentos";
-
-    const cargarArchivos = () => DB.listarArchivos(id).then(lista => { archivos = lista; });
-
-    function mostrarTipo(tipoId) {
-      tipoActual = tipoId;
-      const tipo = tipos.find(t => t.id === tipoId);
-      const ejemplos = (materia.material[tipoId] || [])
-        .map(e => `<li><span class="icono">${tipo.icono}</span>${escapar(e)}</li>`);
-      const subidos = archivos.filter(a => tipoDeArchivo(a) === tipoId)
-        .map(a => `<li><span class="icono">${tipo.icono}</span>
-          <span class="nombre">${escapar(a.nombre)}</span>
-          <button class="accion" data-abrir="${a.id}">Abrir</button>
-          <button class="accion borrar" data-borrar="${a.id}">Eliminar</button></li>`);
-      const elementos = ejemplos.concat(subidos);
-      pestanas.querySelectorAll(".pestana").forEach(p =>
-        p.classList.toggle("activa", p.dataset.tipo === tipoId));
-      listaMaterial.innerHTML = elementos.length
-        ? elementos.join("")
-        : `<li class="vacio">Todavía no hay ${tipo.nombre.toLowerCase()}.</li>`;
-    }
-
-    function mostrarVista(vistaId) {
-      document.querySelectorAll("main section").forEach(s => s.classList.add("oculto"));
-      document.getElementById(vistaId).classList.remove("oculto");
-    }
-
-    function iniciar() {
-      document.title = "Apoyo – " + materia.nombre;
-      encabezado.innerHTML = `
-        ${imagenMateria(materia)}
-        <div class="titulo"><h1>${escapar(materia.nombre)}</h1><p>Apoyo</p></div>`;
-
-      document.getElementById("listaAsesores").innerHTML = materia.asesores.length
-        ? materia.asesores.map(a => `<li><span class="icono">👤</span>${escapar(a)}</li>`).join("")
-        : `<li class="vacio">Todavía no hay asesores.</li>`;
-
-      pestanas.innerHTML = tipos
-        .map(t => `<button class="pestana" data-tipo="${t.id}">${t.nombre}</button>`).join("");
-
-      pestanas.addEventListener("click", e => {
-        const p = e.target.closest(".pestana");
-        if (p) mostrarTipo(p.dataset.tipo);
-      });
-
-      document.querySelectorAll(".recuadro").forEach(r =>
-        r.addEventListener("click", () => {
-          if (r.dataset.vista === "vistaMaterial") mostrarTipo("documentos");
-          mostrarVista(r.dataset.vista);
-        }));
-
-      document.querySelectorAll(".volver").forEach(b =>
-        b.addEventListener("click", () => mostrarVista("vistaInicio")));
-
-      listaMaterial.addEventListener("click", e => {
-        const abrir = e.target.closest("[data-abrir]");
-        const borrar = e.target.closest("[data-borrar]");
-        if (abrir) {
-          const archivo = archivos.find(a => a.id === Number(abrir.dataset.abrir));
-          window.open(URL.createObjectURL(archivo.blob), "_blank");
-        } else if (borrar) {
-          const archivo = archivos.find(a => a.id === Number(borrar.dataset.borrar));
-          if (!confirm(`¿Eliminar "${archivo.nombre}"?`)) return;
-          DB.borrarArchivo(archivo.id).then(cargarArchivos).then(() => mostrarTipo(tipoActual));
-        }
-      });
-
-      // Botón "+" para subir material a esta materia.
-      const agregar = document.getElementById("agregar");
-      const selector = document.getElementById("selector");
-      agregar.classList.remove("oculto");
-      agregar.addEventListener("click", () => selector.click());
-      selector.addEventListener("change", () => {
-        const primero = selector.files[0];
-        if (!primero) return;
-        DB.agregarArchivos(id, selector.files)
-          .then(cargarArchivos)
-          .then(() => {
-            selector.value = "";
-            mostrarVista("vistaMaterial");
-            mostrarTipo(tipoDeArchivo({ tipo: primero.type, nombre: primero.name }));
-          })
-          .catch(err => alert("No se pudo subir el material: " + err));
-      });
-    }
-
-    const fija = materias.find(m => m.id === id);
-    (fija ? Promise.resolve(fija) : DB.listarMaterias().then(propias => propias.find(m => m.id === id)))
-      .then(encontrada => {
-        if (!encontrada) {
-          document.querySelector("main").innerHTML = "<h2>Materia no encontrada</h2>";
-          return;
-        }
-        materia = encontrada;
-        return cargarArchivos().then(iniciar);
-      });
-  </script>
+  <script src="scripts/util.js"></script>
+  <script src="scripts/api.js"></script>
+  <script src="scripts/nav.js"></script>
+  <script src="scripts/analitica.js"></script>
+  <script src="scripts/subir.js"></script>
+  <script src="scripts/materia.js"></script>
 </body>
 </html>

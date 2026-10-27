@@ -1,0 +1,122 @@
+/* Copia literal de design.md §3. No cambiar valores ni nombres. */
+/* Layout: lienzo de plano con riel lateral oculto (índice de láminas) + columna de contenido de 72rem con retícula de 12 */
+:root {
+  color-scheme: dark;
+
+  /* — Marca (no cambian entre temas) — */
+  --azul-noche: #071530;
+  --azul-bátiz: #0E2F6B;
+  --azul-señal: #2F6FE4;
+  --amarillo-bátiz: #F6C200;
+  --amarillo-tinta: #FFE27A;
+  --guinda-ipn: #6C1D45;
+  --guinda-claro: #B0477A;
+
+  /* — Roles (cambian entre temas) — */
+  --bg: #071530;               /* lienzo */
+  --bg-retícula: rgba(120, 160, 230, .07);  /* líneas finas del plano */
+  --bg-retícula-mayor: rgba(120, 160, 230, .13);
+  --superficie: #0C1E42;       /* tarjetas, panel nav */
+  --superficie-2: #12295A;     /* hover, elementos elevados */
+  --línea: rgba(150, 180, 235, .18);  /* bordes 1px */
+  --línea-fuerte: rgba(150, 180, 235, .38);
+  --fg: #E9EEF8;               /* texto principal */
+  --fg-2: #A9B6D3;             /* texto secundario */
+  --fg-3: #6F7FA6;             /* rótulos, metadatos */
+  --acento: var(--amarillo-bátiz);
+  --acento-fg: #071530;        /* texto sobre acento */
+  --enlace: #7FA8FF;
+  --sello: var(--guinda-claro);
+
+  /* — Colores de sección — */
+  --sec-estudio: #F6C200;
+  --sec-apoyo: #C25A8C;
+  --sec-preparacion: #5B8CFF;
+
+  /* — Semánticos — */
+  --ok: #2BB27D; --aviso: #F0A01A; --error: #E5566A;
+
+  /* — Tipografía — */
+  --f-display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-texto: "Schibsted Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-tecnica: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+
+  /* Escala tipográfica (razón ~1.25, fluida) */
+  --t-xs: .75rem;      /* 12  rótulos, folios */
+  --t-sm: .875rem;     /* 14  metadatos */
+  --t-base: 1.0625rem; /* 17  cuerpo */
+  --t-md: 1.25rem;     /* 20  lead */
+  --t-lg: clamp(1.5rem, 1.2rem + 1vw, 2rem);         /* títulos de tarjeta grandes */
+  --t-xl: clamp(2rem, 1.4rem + 2.4vw, 3.25rem);      /* títulos de sección */
+  --t-hero: clamp(3.5rem, 1.5rem + 9vw, 9.5rem);     /* solo el hero */
+
+  /* — Espacio (base 4px) — */
+  --e-1: .25rem; --e-2: .5rem; --e-3: .75rem; --e-4: 1rem;
+  --e-5: 1.5rem; --e-6: 2rem; --e-7: 3rem; --e-8: 4.5rem; --e-9: 7rem;
+
+  /* — Forma — */
+  --radio-s: 2px;      /* chips, inputs */
+  --radio-m: 4px;      /* tarjetas, botones */
+  /* Prohibido >6px salvo avatares circulares */
+
+  /* — Layout — */
+  --ancho-contenido: 72rem;
+  --ancho-lectura: 40rem;          /* ~65 caracteres */
+  --nav-gatillo: 14px;             /* zona sensible del borde izquierdo */
+  --nav-ancho: 18.5rem;
+
+  /* — Movimiento — */
+  --ease-salida: cubic-bezier(.16, 1, .3, 1);   /* entra rápido, frena suave */
+  --ease-precisa: cubic-bezier(.65, 0, .35, 1); /* trazos, cotas */
+  --d-micro: 140ms;   /* hover, foco */
+  --d-corta: 260ms;   /* panel nav, toggles */
+  --d-media: 520ms;   /* entradas de sección */
+  --d-larga: 1100ms;  /* trazo del hero (una sola vez) */
+
+  --z-nav: 50; --z-gatillo: 49; --z-top: 60;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #F2F4F8;
+    --bg-retícula: rgba(14, 47, 107, .06);
+    --bg-retícula-mayor: rgba(14, 47, 107, .11);
+    --superficie: #FFFFFF;
+    --superficie-2: #E8EDF6;
+    --línea: rgba(14, 47, 107, .14);
+    --línea-fuerte: rgba(14, 47, 107, .32);
+    --fg: #0B1733;
+    --fg-2: #3A4A6E;
+    --fg-3: #67769A;
+    --acento: #F6C200;
+    --acento-fg: #0B1733;
+    --enlace: #1F55C7;
+    --sello: #6C1D45;
+    --sec-estudio: #B88A00;     /* amarillo oscurecido para texto/íconos */
+    --sec-apoyo: #6C1D45;
+    --sec-preparacion: #1F55C7;
+    --ok: #157A52; --aviso: #A65F00; --error: #B5233A;
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #F2F4F8;
+  --bg-retícula: rgba(14, 47, 107, .06);
+  --bg-retícula-mayor: rgba(14, 47, 107, .11);
+  --superficie: #FFFFFF;
+  --superficie-2: #E8EDF6;
+  --línea: rgba(14, 47, 107, .14);
+  --línea-fuerte: rgba(14, 47, 107, .32);
+  --fg: #0B1733;
+  --fg-2: #3A4A6E;
+  --fg-3: #67769A;
+  --acento: #F6C200;
+  --acento-fg: #0B1733;
+  --enlace: #1F55C7;
+  --sello: #6C1D45;
+  --sec-estudio: #B88A00;
+  --sec-apoyo: #6C1D45;
+  --sec-preparacion: #1F55C7;
+  --ok: #157A52; --aviso: #A65F00; --error: #B5233A;
+}
