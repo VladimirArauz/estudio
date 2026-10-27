@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesión · Bátiz hasta la muerte</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <script src="scripts/tema-temprano.js"></script>
+</head>
+<body data-pagina="login">
+  <main id="contenido" class="contenedor" tabindex="-1">
+    <header class="cabecera-pagina">
+      <p class="rotulo">Cuenta · Acceso</p>
+      <h1 class="cabecera-pagina__titulo" id="tituloAcceso">Iniciar sesión</h1>
+      <div class="cota" aria-hidden="true"><span class="cota__linea"></span><span class="cota__medida">4 roles</span></div>
+    </header>
+
+    <div class="lamina__rejilla">
+      <div class="lamina__principal pila" style="gap: var(--e-5); max-width: 32rem; grid-column: 1 / span 6">
+        <div class="pestanas" role="tablist" aria-label="Tipo de acceso">
+          <button class="chip" role="tab" id="tabEntrar" aria-selected="true" aria-controls="formEntrar">Iniciar sesión</button>
+          <button class="chip" role="tab" id="tabRegistro" aria-selected="false" aria-controls="formRegistro">Crear cuenta</button>
+        </div>
+
+        <form class="form" id="formEntrar" role="tabpanel" aria-labelledby="tabEntrar" novalidate>
+          <div class="campo">
+            <label for="emailEntrar">Correo</label>
+            <input type="email" id="emailEntrar" autocomplete="email" required>
+          </div>
+          <div class="campo">
+            <label for="passEntrar">Contraseña</label>
+            <input type="password" id="passEntrar" autocomplete="current-password" required>
+          </div>
+          <p class="form__mensaje form__mensaje--error" role="alert"></p>
+          <div class="form__acciones" style="justify-content: flex-start">
+            <button class="btn btn--primario" type="submit">Iniciar sesión</button>
+          </div>
+        </form>
+
+        <form class="form" id="formRegistro" role="tabpanel" aria-labelledby="tabRegistro" novalidate hidden>
+          <div class="campo">
+            <label for="nombreRegistro">Nombre completo</label>
+            <input type="text" id="nombreRegistro" autocomplete="name" maxlength="120" required>
+          </div>
+          <div class="campo">
+            <label for="emailRegistro">Correo</label>
+            <input type="email" id="emailRegistro" autocomplete="email" required>
+          </div>
+          <div class="campo">
+            <label for="passRegistro">Contraseña</label>
+            <input type="password" id="passRegistro" autocomplete="new-password" minlength="8" required>
+            <span class="campo__ayuda">Mínimo 8 caracteres.</span>
+          </div>
+          <fieldset class="campo" style="border: 0; padding: 0">
+            <legend class="campo__etiqueta">Quiero entrar como</legend>
+            <div class="fila">
+              <label class="casilla"><input type="radio" name="rol" value="alumno" checked> Alumno</label>
+              <label class="casilla"><input type="radio" name="rol" value="profesor"> Profesor</label>
+            </div>
+            <span class="campo__ayuda">Como profesor podrás postularte para dar una materia y abrir tu curso.</span>
+          </fieldset>
+          <p class="form__mensaje form__mensaje--error" role="alert"></p>
+          <div class="form__acciones" style="justify-content: flex-start">
+            <button class="btn btn--primario" type="submit">Crear cuenta</button>
+          </div>
+        </form>
+      </div>
+
+      <aside class="pila" style="grid-column: 8 / -1">
+        <div class="nota">
+          <p class="rotulo">Qué puede hacer cada rol</p>
+          <div class="tabla-caja" style="border: 0">
+            <table class="tabla">
+              <tbody>
+                <tr><td class="mono">Invitado</td><td>Ve el material y practica exámenes sin guardar resultados.</td></tr>
+                <tr><td class="mono">Alumno</td><td>Sube apuntes, tareas y material; se inscribe a cursos y evalúa a sus profesores.</td></tr>
+                <tr><td class="mono">Profesor</td><td>Se postula a una materia, abre su curso, califica y genera exámenes con IA.</td></tr>
+                <tr><td class="mono">Admin</td><td>Administra usuarios, materias, contenido y estadísticas.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="scripts/util.js"></script>
+  <script src="scripts/api.js"></script>
+  <script src="scripts/nav.js"></script>
+  <script src="scripts/analitica.js"></script>
+  <script src="scripts/login.js"></script>
+</body>
+</html>
