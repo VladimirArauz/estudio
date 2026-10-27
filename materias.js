@@ -45,14 +45,20 @@ const materias = [
   }
 ];
 
+// Evita que el texto escrito por una persona se interprete como HTML.
+function escapar(texto) {
+  return String(texto).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
 // Imagen de cada materia, compartida por las dos páginas.
 function imagenMateria(materia) {
   return `
     <svg viewBox="0 0 220 130" preserveAspectRatio="xMidYMid slice">
-      <rect width="220" height="130" fill="${materia.color}"/>
+      <rect width="220" height="130" fill="${escapar(materia.color)}"/>
       <circle cx="185" cy="25" r="40" fill="rgba(255,255,255,0.15)"/>
       <circle cx="30" cy="115" r="35" fill="rgba(255,255,255,0.15)"/>
       <text x="110" y="78" text-anchor="middle" font-size="40" font-weight="bold"
-            fill="#fff" font-family="Segoe UI, Arial">${materia.simbolo}</text>
+            fill="#fff" font-family="Segoe UI, Arial">${escapar(materia.simbolo)}</text>
     </svg>`;
 }

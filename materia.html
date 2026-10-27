@@ -95,6 +95,37 @@
     }
     .lista .icono { font-size: 22px; }
     .vacio { color: #777; }
+    .lista .nombre { flex: 1; word-break: break-word; }
+    .accion {
+      background: #2980b9;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .accion:hover { background: #1f6391; }
+    .accion.borrar { background: #c0392b; }
+    .accion.borrar:hover { background: #a93226; }
+
+    /* Botón para subir material */
+    .agregar {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: none;
+      background: #2980b9;
+      color: #fff;
+      font-size: 34px;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    }
+    .agregar:hover { background: #1f6391; }
 
     @media (max-width: 600px) {
       .recuadros { grid-template-columns: 1fr; }
@@ -128,7 +159,11 @@
     </section>
   </main>
 
+  <button class="agregar oculto" id="agregar" title="Subir material" aria-label="Subir material">+</button>
+  <input type="file" id="selector" multiple hidden>
+
   <script src="materias.js"></script>
+  <script src="db.js"></script>
   <script>
     const tipos = [
       { id: "documentos", nombre: "Documentos", icono: "📄" },
@@ -138,44 +173,66 @@
       { id: "otros", nombre: "Otros", icono: "📦" }
     ];
 
-    const id = new URLSearchParams(location.search).get("m");
-    const materia = materias.find(m => m.id === id);
-    const encabezado = document.getElementById("encabezado");
+    // Decide en qué pestaña va un archivo subido.
+    function tipoDeArchivo(archivo) {
+      if (archivo.tipo.startsWith("video/")) return "videos";
+      if (archivo.tipo.startsWith("image/")) return "imagenes";
+      if (archivo.tipo.startsWith("audio/")) return "audios";
+      if (/pdf|word|document|text|sheet|excel|presentation|powerpoint/.test(archivo.tipo) ||
+          /\.(pdf|docx?|xlsx?|pptx?|txt)$/i.test(archivo.nombre)) return "documentos";
+      return "otros";
+    }
 
-    if (!materia) {
-      document.querySelector("main").innerHTML = "<h2>Materia no encontrada</h2>";
-    } else {
+    const id = new URLSearchParams(location.search).get("m");
+    const encabezado = document.getElementById("encabezado");
+    const pestanas = document.getElementById("pestanas");
+    const listaMaterial = document.getElementById("listaMaterial");
+    let materia;
+    let archivos = [];
+    let tipoActual = "documentos";
+
+    const cargarArchivos = () => DB.listarArchivos(id).then(lista => { archivos = lista; });
+
+    function mostrarTipo(tipoId) {
+      tipoActual = tipoId;
+      const tipo = tipos.find(t => t.id === tipoId);
+      const ejemplos = (materia.material[tipoId] || [])
+        .map(e => `<li><span class="icono">${tipo.icono}</span>${escapar(e)}</li>`);
+      const subidos = archivos.filter(a => tipoDeArchivo(a) === tipoId)
+        .map(a => `<li><span class="icono">${tipo.icono}</span>
+          <span class="nombre">${escapar(a.nombre)}</span>
+          <button class="accion" data-abrir="${a.id}">Abrir</button>
+          <button class="accion borrar" data-borrar="${a.id}">Eliminar</button></li>`);
+      const elementos = ejemplos.concat(subidos);
+      pestanas.querySelectorAll(".pestana").forEach(p =>
+        p.classList.toggle("activa", p.dataset.tipo === tipoId));
+      listaMaterial.innerHTML = elementos.length
+        ? elementos.join("")
+        : `<li class="vacio">Todavía no hay ${tipo.nombre.toLowerCase()}.</li>`;
+    }
+
+    function mostrarVista(vistaId) {
+      document.querySelectorAll("main section").forEach(s => s.classList.add("oculto"));
+      document.getElementById(vistaId).classList.remove("oculto");
+    }
+
+    function iniciar() {
       document.title = "Apoyo – " + materia.nombre;
       encabezado.innerHTML = `
         ${imagenMateria(materia)}
-        <div class="titulo"><h1>${materia.nombre}</h1><p>Apoyo</p></div>`;
+        <div class="titulo"><h1>${escapar(materia.nombre)}</h1><p>Apoyo</p></div>`;
 
-      document.getElementById("listaAsesores").innerHTML = materia.asesores
-        .map(a => `<li><span class="icono">👤</span>${a}</li>`).join("");
+      document.getElementById("listaAsesores").innerHTML = materia.asesores.length
+        ? materia.asesores.map(a => `<li><span class="icono">👤</span>${escapar(a)}</li>`).join("")
+        : `<li class="vacio">Todavía no hay asesores.</li>`;
 
-      const pestanas = document.getElementById("pestanas");
       pestanas.innerHTML = tipos
         .map(t => `<button class="pestana" data-tipo="${t.id}">${t.nombre}</button>`).join("");
-
-      function mostrarTipo(tipoId) {
-        const tipo = tipos.find(t => t.id === tipoId);
-        const elementos = materia.material[tipoId] || [];
-        pestanas.querySelectorAll(".pestana").forEach(p =>
-          p.classList.toggle("activa", p.dataset.tipo === tipoId));
-        document.getElementById("listaMaterial").innerHTML = elementos.length
-          ? elementos.map(e => `<li><span class="icono">${tipo.icono}</span>${e}</li>`).join("")
-          : `<li class="vacio">Todavía no hay ${tipo.nombre.toLowerCase()}.</li>`;
-      }
 
       pestanas.addEventListener("click", e => {
         const p = e.target.closest(".pestana");
         if (p) mostrarTipo(p.dataset.tipo);
       });
-
-      function mostrarVista(vistaId) {
-        document.querySelectorAll("main section").forEach(s => s.classList.add("oculto"));
-        document.getElementById(vistaId).classList.remove("oculto");
-      }
 
       document.querySelectorAll(".recuadro").forEach(r =>
         r.addEventListener("click", () => {
@@ -185,7 +242,49 @@
 
       document.querySelectorAll(".volver").forEach(b =>
         b.addEventListener("click", () => mostrarVista("vistaInicio")));
+
+      listaMaterial.addEventListener("click", e => {
+        const abrir = e.target.closest("[data-abrir]");
+        const borrar = e.target.closest("[data-borrar]");
+        if (abrir) {
+          const archivo = archivos.find(a => a.id === Number(abrir.dataset.abrir));
+          window.open(URL.createObjectURL(archivo.blob), "_blank");
+        } else if (borrar) {
+          const archivo = archivos.find(a => a.id === Number(borrar.dataset.borrar));
+          if (!confirm(`¿Eliminar "${archivo.nombre}"?`)) return;
+          DB.borrarArchivo(archivo.id).then(cargarArchivos).then(() => mostrarTipo(tipoActual));
+        }
+      });
+
+      // Botón "+" para subir material a esta materia.
+      const agregar = document.getElementById("agregar");
+      const selector = document.getElementById("selector");
+      agregar.classList.remove("oculto");
+      agregar.addEventListener("click", () => selector.click());
+      selector.addEventListener("change", () => {
+        const primero = selector.files[0];
+        if (!primero) return;
+        DB.agregarArchivos(id, selector.files)
+          .then(cargarArchivos)
+          .then(() => {
+            selector.value = "";
+            mostrarVista("vistaMaterial");
+            mostrarTipo(tipoDeArchivo({ tipo: primero.type, nombre: primero.name }));
+          })
+          .catch(err => alert("No se pudo subir el material: " + err));
+      });
     }
+
+    const fija = materias.find(m => m.id === id);
+    (fija ? Promise.resolve(fija) : DB.listarMaterias().then(propias => propias.find(m => m.id === id)))
+      .then(encontrada => {
+        if (!encontrada) {
+          document.querySelector("main").innerHTML = "<h2>Materia no encontrada</h2>";
+          return;
+        }
+        materia = encontrada;
+        return cargarArchivos().then(iniciar);
+      });
   </script>
 </body>
 </html>
