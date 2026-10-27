@@ -1,0 +1,16 @@
+# Secretos y datos locales
+config/config.local.php
+config/*.local.json
+config/admin-inicial.txt
+.env
+
+# Archivos subidos y vistas generadas
+storage/originales/*
+storage/generados/*
+!storage/originales/.gitkeep
+!storage/generados/.gitkeep
+
+# Python
+procesador/.venv/
+__pycache__/
+*.pyc

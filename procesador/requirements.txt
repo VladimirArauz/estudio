@@ -1,0 +1,10 @@
+PyMySQL>=1.1
+PyMuPDF>=1.26
+python-docx>=1.1
+python-pptx>=1.0
+openpyxl>=3.1
+Pillow>=11
+Markdown>=3.7
+Pygments>=2.19
+bleach>=6.2
+faster-whisper>=1.1
