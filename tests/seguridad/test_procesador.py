@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from conftest import RAIZ, sql
+from ayuda import RAIZ, sql
 
 pytestmark = pytest.mark.skipif(os.geteuid() != 0, reason="el worker aislado se lanza con systemd-run (root)")
 

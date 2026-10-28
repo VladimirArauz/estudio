@@ -193,6 +193,8 @@
   font: 400 var(--t-xs)/1.6 var(--f-tecnica); text-transform: uppercase; letter-spacing: .08em; color: var(--fg-2); background: none; white-space: nowrap;
 }
 button.chip, a.chip { min-height: 32px; padding-inline: var(--e-3); text-decoration: none; }
+/* Etiquetas con texto variable (p. ej. el estado de la IA): se parten en líneas y no rebasan su caja. */
+.chip--largo { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 button.chip:hover, a.chip:hover { border-color: var(--sec); color: var(--fg); }
 .chip--activo, .chip[aria-pressed="true"], .chip[aria-selected="true"] { background: color-mix(in srgb, var(--sec) 15%, transparent); border-color: var(--sec); color: var(--fg); }
 .chip--ok { border-color: var(--ok); color: var(--ok); }

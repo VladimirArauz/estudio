@@ -5,7 +5,7 @@ import time
 
 import pytest
 
-from conftest import COOKIE, CONTRASENA, Cliente, esperar_paso_nuevo, sql, totp
+from ayuda import COOKIE, CONTRASENA, Cliente, esperar_paso_nuevo, sql, totp
 
 
 # ───── Inicio de sesión ─────
