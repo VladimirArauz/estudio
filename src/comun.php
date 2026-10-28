@@ -1,6 +1,6 @@
 <?php
 // Base de todos los endpoints: JSON, sesión, CSRF, roles y registro de actividad.
-require_once __DIR__ . '/_db.php';
+require_once __DIR__ . '/db.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');

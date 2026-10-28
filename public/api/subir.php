@@ -1,7 +1,7 @@
 <?php
 // Recibe un archivo, lo valida y lo deja en cola para que procesador/worker.py genere su vista HTML.
-require_once __DIR__ . '/_comun.php';
-require_once __DIR__ . '/_archivos.php';
+require_once dirname(__DIR__, 2) . '/src/comun.php';
+require_once dirname(__DIR__, 2) . '/src/archivos.php';
 
 exigirPost();
 $u = requiereRol('alumno', 'profesor', 'admin');

@@ -1,8 +1,8 @@
 <?php
 // Generador de exámenes con Gemini (portado de ECO_Preparación/server.js).
 // A diferencia del original, el prompt se arma aquí: el navegador solo elige modo, materia y tema.
-require_once __DIR__ . '/_comun.php';
-require_once __DIR__ . '/_archivos.php';
+require_once dirname(__DIR__, 2) . '/src/comun.php';
+require_once dirname(__DIR__, 2) . '/src/archivos.php';
 
 const MODOS = [
     'simulacro' => ['cantidad' => 12, 'nombre' => 'Simulacro general'],

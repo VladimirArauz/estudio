@@ -1,7 +1,7 @@
 <?php
 // Listado, detalle, borrado y reproceso de archivos.
-require_once __DIR__ . '/_comun.php';
-require_once __DIR__ . '/_archivos.php';
+require_once dirname(__DIR__, 2) . '/src/comun.php';
+require_once dirname(__DIR__, 2) . '/src/archivos.php';
 
 if (metodo() === 'GET') {
     if ($id = entero($_GET['id'] ?? null)) {

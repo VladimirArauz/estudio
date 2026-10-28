@@ -3,7 +3,7 @@
 // Uso: /opt/lampp/bin/php bin/crear-admin.php correo@ejemplo.com "Nombre" [contraseña]
 // Sin contraseña genera una aleatoria y la muestra una sola vez.
 if (PHP_SAPI !== 'cli') exit;
-require_once dirname(__DIR__) . '/api/_db.php';
+require_once dirname(__DIR__) . '/src/db.php';
 
 [$_, $email, $nombre] = array_pad($argv, 3, null);
 $pass = $argv[3] ?? rtrim(strtr(base64_encode(random_bytes(12)), '+/', 'Kx'), '=');

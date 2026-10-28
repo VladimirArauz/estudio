@@ -1,6 +1,6 @@
 <?php
 // Inicio de sesión, registro, cierre de sesión y datos de la sesión actual.
-require_once __DIR__ . '/_comun.php';
+require_once dirname(__DIR__, 2) . '/src/comun.php';
 
 const MAX_INTENTOS = 5;        // fallidos por correo en la ventana
 const VENTANA_MIN = 15;

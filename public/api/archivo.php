@@ -4,8 +4,8 @@
 //   modo=vista     → el fragmento HTML generado por el procesador
 //   modo=recurso&r → imágenes, miniaturas y medios convertidos de la vista
 // Soporta peticiones Range para poder adelantar audio y video.
-require_once __DIR__ . '/_comun.php';
-require_once __DIR__ . '/_archivos.php';
+require_once dirname(__DIR__, 2) . '/src/comun.php';
+require_once dirname(__DIR__, 2) . '/src/archivos.php';
 session_write_close(); // no bloquear otras peticiones mientras se transmite
 
 $a = uno(SQL_ARCHIVO . ' WHERE a.id = ?', [entero($_GET['id'] ?? null) ?? 0]);

@@ -1,7 +1,7 @@
 <?php
 // Ejecuta los archivos de sql/ en orden. Uso: /opt/lampp/bin/php bin/migrar.php
 if (PHP_SAPI !== 'cli') exit;
-require_once dirname(__DIR__) . '/api/_db.php';
+require_once dirname(__DIR__) . '/src/db.php';
 
 foreach (glob(dirname(__DIR__) . '/sql/*.sql') as $archivo) {
     $sql = file_get_contents($archivo);

@@ -1,8 +1,8 @@
 <?php
 // Classroom: postulaciones, cursos, inscripciones, actividades, entregas, exámenes de curso,
 // evaluaciones y estadísticas.
-require_once __DIR__ . '/_comun.php';
-require_once __DIR__ . '/_archivos.php';
+require_once dirname(__DIR__, 2) . '/src/comun.php';
+require_once dirname(__DIR__, 2) . '/src/archivos.php';
 
 function curso(int $id): array {
     $c = uno('SELECT c.*, m.nombre materia, m.slug materia_slug, u.nombre profesor

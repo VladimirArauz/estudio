@@ -1,6 +1,6 @@
 <?php
 // Materias: lectura pública; altas, cambios y bajas solo para el admin.
-require_once __DIR__ . '/_comun.php';
+require_once dirname(__DIR__, 2) . '/src/comun.php';
 
 function conAsesores(array $materias): array {
     if (!$materias) return [];

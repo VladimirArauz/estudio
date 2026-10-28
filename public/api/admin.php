@@ -1,7 +1,7 @@
 <?php
 // Panel de administración: todo lo que pasa en la plataforma, resumido por secciones.
-require_once __DIR__ . '/_comun.php';
-require_once __DIR__ . '/_archivos.php';
+require_once dirname(__DIR__, 2) . '/src/comun.php';
+require_once dirname(__DIR__, 2) . '/src/archivos.php';
 
 $yo = requiereRol('admin');
 const POR_PAGINA = 50;

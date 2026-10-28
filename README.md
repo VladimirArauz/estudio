@@ -17,7 +17,10 @@ El diseño sigue `design.md` («Plano técnico de la Voca 9»): tokens en `style
 # 1. XAMPP (Apache + PHP-FPM)
 sudo /opt/lampp/lampp start
 
-# 2. Túnel a la BD de IONOS y worker de archivos (servicios del sistema, una sola vez)
+# 2. Apache sirve solo public/ (una sola vez)
+sudo ln -sfn "$PWD/public" /opt/lampp/htdocs/estudio
+
+# 3. Túnel a la BD de IONOS y worker de archivos (servicios del sistema, una sola vez)
 sudo bin/instalar-servicios.sh
 ```
 
@@ -44,7 +47,7 @@ La BD MariaDB «Estudios» está en IONOS y **solo es visible desde el hosting d
 PHP (localhost) → 127.0.0.1:3307 → SSH al webspace de IONOS → BD:3306
 ```
 
-Cada consulta tarda ~150 ms de ida y vuelta. Por eso la API usa conexión persistente, *prepares* emulados y junta datos en pocas consultas (ver `api/_db.php`).
+Cada consulta tarda ~150 ms de ida y vuelta. Por eso la API usa conexión persistente, *prepares* emulados y junta datos en pocas consultas (ver `src/db.php`).
 
 ## Secretos (nunca van en git)
 
@@ -52,9 +55,9 @@ Cada consulta tarda ~150 ms de ida y vuelta. Por eso la API usa conexión persis
 |---|---|
 | `config/config.local.php` | Credenciales de la BD y API key de Gemini. Plantilla: `config/config.ejemplo.php` |
 | `config/tunel.local.json` | Usuario y contraseña SSH de IONOS para el túnel |
-| `config/admin-inicial.txt` | Contraseña del primer admin. **Cámbiala** en *Mi cuenta* y borra este archivo |
+| `config/admin-inicial.txt` | Contraseña del primer admin (solo en una instalación nueva). **Cámbiala** en *Mi cuenta* y borra este archivo |
 
-`config/`, `bin/`, `sql/`, `procesador/`, `storage/` y todo lo que empieza con punto (`.git`, `.user.ini`…) están bloqueados en Apache (`.htaccess`).
+Apache solo sirve `public/`; `config/`, `src/`, `bin/`, `sql/`, `procesador/` y `storage/` quedan fuera del sitio. Como segunda capa, esas carpetas y todo lo que empieza con punto (`.git`, `.user.ini`…) también están bloqueados con `.htaccess`.
 
 ### Activar la IA (Gemini)
 
@@ -107,14 +110,19 @@ Variables opcionales del worker: `ESTUDIO_WHISPER` (modelo; `base` por defecto, 
 ## Estructura
 
 ```
-index.html, materia.html, preparacion.html, cursos.html, curso.html, panel.html, login.html, ver.html
-styles/      tokens.css (copia literal de design.md §3) · base.css · components.css · vista.css
-scripts/     nav.js (índice de láminas) · api.js · util.js · subir.js · examen.js · banco.js · una por página
-api/         PHP: auth, materias, archivos, subir, archivo, ia, cursos, admin, visita, salud
+public/      lo único que sirve Apache (htdocs/estudio → estudio/public)
+  *.html     index, materia, preparacion, cursos, curso, panel, login, ver
+  styles/    tokens.css (copia literal de design.md §3) · base.css · components.css · vista.css
+  scripts/   nav.js (índice de láminas) · api.js · util.js · subir.js · examen.js · banco.js · una por página
+  api/       endpoints PHP: auth, materias, archivos, subir, archivo, ia, cursos, admin, visita, salud
+src/         PHP compartido por los endpoints: comun.php (sesión, CSRF, roles), db.php, archivos.php
+config/      config.php (+ config.local.php y tunel.local.json, fuera de git)
 procesador/  worker.py + procesadores/ (Python, venv en procesador/.venv)
 sql/         esquema y datos iniciales
 bin/         túnel, migraciones, crear admin, servicios systemd
 storage/     originales/ y generados/ (fuera de git)
+tests/       e2e/ (Playwright) y seguridad/ (pruebas de controles)
+docs/        arquitectura y operación
 ```
 
 ## Seguridad

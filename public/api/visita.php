@@ -1,6 +1,6 @@
 <?php
 // Latido de analítica: una fila por página vista, con los segundos que estuvo visible.
-require_once __DIR__ . '/_comun.php';
+require_once dirname(__DIR__, 2) . '/src/comun.php';
 
 if (metodo() !== 'POST') fallar('Método no permitido.', 405);
 $d = entrada();

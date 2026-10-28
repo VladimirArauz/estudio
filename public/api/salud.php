@@ -1,6 +1,6 @@
 <?php
 // Comprueba que la API llega a la BD de IONOS.
-require_once __DIR__ . '/_db.php';
+require_once dirname(__DIR__, 2) . '/src/db.php';
 header('Content-Type: application/json; charset=utf-8');
 try {
     db()->query('SELECT 1');
