@@ -1,0 +1,10 @@
+[Unit]
+Description=Estudio: respaldo cifrado de la BD de IONOS y de storage
+After=estudio-tunel.service
+Wants=estudio-tunel.service
+
+[Service]
+Type=oneshot
+ExecStart=/home/aumf-ubuntu-080704/estudio/bin/respaldar.sh
+Nice=15
+IOSchedulingClass=idle

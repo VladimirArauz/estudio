@@ -26,6 +26,8 @@ def navegador():
 
 def _pagina(navegador, **opciones) -> Page:
     ctx = navegador.new_context(ignore_https_errors=True, locale="es-MX", **opciones)
+    # Pruebas herméticas: las fuentes de Google vienen de internet y, si tardan, retrasan el evento «load».
+    ctx.route(re.compile(r"^https://fonts\.(googleapis|gstatic)\.com/"), lambda ruta: ruta.abort())
     page = ctx.new_page()
     page.set_default_timeout(15_000)
     page.errores = []

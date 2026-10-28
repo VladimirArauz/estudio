@@ -32,6 +32,11 @@ Cambios hechos fuera del repo. Cada archivo tocado tiene una copia `.bak-AAAAMMD
   `Permissions-Policy`. HSTS solo con un dominio real (en `localhost` afectaría a otros puertos).
 - Deuda conocida: la CSP aún permite `style-src 'unsafe-inline'` (62 `style=""` en páginas y scripts).
 
+## Respaldos y logs
+- `estudio-respaldo.timer` (diario, cifrado con age; ver `docs/operacion.md`) y `/etc/logrotate.d/estudio`.
+- Entorno de pruebas: vhost `127.0.0.1:8443` (`/opt/lampp/etc/extra/estudio-pruebas.conf`), BD local `estudio_pruebas`
+  con su propio usuario (sin acceso a otras BD).
+
 ## Pendiente de actualizar
 XAMPP 8.2.12 trae Apache 2.4.58 y OpenSSL 1.1.1w (sin soporte). El PHP que atiende la web es el 8.5
 del sistema, que sí está al día. Lo recomendable es pasar a Apache y MariaDB del sistema (paquetes de

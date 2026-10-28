@@ -16,11 +16,16 @@ if ($ENTORNO !== 'pruebas' || db()->query('SELECT DATABASE()')->fetchColumn() !=
 [$_, $orden] = array_pad($argv, 2, '');
 switch ($orden) {
     case 'reiniciar':
-        // Deja solo el catálogo (materias y asesores); vacía todo lo demás y el storage de pruebas.
+        // Vacía todo (también el catálogo, que las pruebas modifican) y vuelve a cargar sql/*.sql como bin/migrar.php,
+        // para que cada corrida empiece igual. Vacía también el storage de pruebas.
         $tablas = db()->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
         db()->exec('SET FOREIGN_KEY_CHECKS = 0');
-        foreach (array_diff($tablas, ['materias', 'asesores']) as $t) db()->exec("TRUNCATE TABLE `$t`");
+        foreach ($tablas as $t) db()->exec("TRUNCATE TABLE `$t`");
         db()->exec('SET FOREIGN_KEY_CHECKS = 1');
+        foreach (glob(dirname(__DIR__, 2) . '/sql/*.sql') as $archivo) {
+            $sql = preg_replace('/^\s*--.*$/m', '', file_get_contents($archivo));
+            foreach (preg_split('/;\s*$/m', $sql) as $sentencia) if (trim($sentencia) !== '') db()->exec($sentencia);
+        }
         foreach (['originales', 'generados'] as $d) {
             $dir = $CONFIG['subidas']['dir'] . "/$d";
             foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST) as $f) {
