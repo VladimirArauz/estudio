@@ -5,6 +5,7 @@ require_once dirname(__DIR__, 2) . '/src/archivos.php';
 
 exigirPost();
 $u = requiereRol('alumno', 'profesor', 'admin');
+limitar('subir:' . $u['id'], 60, 3600, 'Subiste demasiados archivos en la última hora. Espera un poco.');
 
 $f = $_FILES['archivo'] ?? null;
 if (!$f || is_array($f['name'])) fallar('Envía un archivo en el campo «archivo».', 422);
@@ -12,6 +13,18 @@ if ($f['error'] === UPLOAD_ERR_INI_SIZE || $f['error'] === UPLOAD_ERR_FORM_SIZE)
 if ($f['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($f['tmp_name'])) fallar('La subida no se completó. Intenta de nuevo.', 400);
 if ($f['size'] > $CONFIG['subidas']['max_bytes']) fallar('El archivo pesa más de 200 MB. Comprímelo o divídelo.', 413);
 if ($f['size'] === 0) fallar('El archivo está vacío.', 422);
+
+// Cuota diaria por persona (la administración con 2FA no tiene cuota) y espacio mínimo libre en el disco.
+const CUOTA_DIARIA = ['alumno' => [20, 500 * 1024 * 1024], 'profesor' => [80, 2048 * 1024 * 1024]];
+if (!esAdmin()) {
+    [$maxArchivos, $maxBytes] = CUOTA_DIARIA[$u['rol']] ?? CUOTA_DIARIA['alumno'];
+    $hoy = uno('SELECT COUNT(*) n, COALESCE(SUM(bytes), 0) b FROM archivos WHERE autor_id = ? AND creado >= CURDATE()', [$u['id']]);
+    if ($hoy['n'] >= $maxArchivos || $hoy['b'] + $f['size'] > $maxBytes) {
+        fallar('Llegaste al límite de subidas de hoy (' . $maxArchivos . ' archivos o ' . round($maxBytes / 1048576) . ' MB). Mañana se renueva.', 429);
+    }
+}
+$libre = @disk_free_space($CONFIG['subidas']['dir']);
+if ($libre !== false && $libre - $f['size'] < 2 * 1024 ** 3) fallar('El servidor se está quedando sin espacio. Avisa a la administración.', 507);
 
 // Extensión: solo la última, y debe estar en la lista blanca.
 $nombre = mb_substr(basename(str_replace('\\', '/', $f['name'])), 0, 255);
@@ -52,7 +65,7 @@ switch ($seccion) {
         break;
     case 'guia':
         // Manuales y guías para el examen de admisión: los usa api/ia.php al generar exámenes.
-        if ($u['rol'] !== 'admin') fallar('Solo la administración puede subir guías de examen.', 403);
+        if (!esAdmin()) fallar('Solo la administración (con verificación en dos pasos) puede subir guías de examen.', 403);
         if (!in_array($tipo, TIPOS_GUIA, true)) fallar('Las guías deben ser PDF, Word, PowerPoint, Excel o texto para poder leerlas.', 415);
         $areaExamen = $d['area_examen'] ?? '';
         if ($areaExamen === '') $areaExamen = null;

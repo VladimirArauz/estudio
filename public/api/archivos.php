@@ -40,6 +40,8 @@ if (!$a) fallar('Archivo no encontrado.', 404);
 switch (accion()) {
     case 'borrar':
         if (!puedeBorrar($a)) fallar('Solo quien lo subió (o la administración) puede eliminarlo.', 403);
+        // La administración borrando lo de otra persona: confirma la contraseña.
+        if ((int)$a['autor_id'] !== usuario()['id'] && esAdmin()) exigirReautenticacion();
         borrarArchivo($a);
         registrar('archivo_borrar', 'archivo', $id, ['titulo' => $a['titulo']]);
         responder(['ok' => true]);

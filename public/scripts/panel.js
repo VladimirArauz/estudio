@@ -328,7 +328,10 @@ async function mostrar(id, nuevosFiltros) {
   panel.replaceWith(nuevo);
   panel = nuevo;
   panel.innerHTML = '<p class="cargando">Cargando…</p>';
-  try { await VISTAS[id](); } catch (err) { panel.innerHTML = `<div class="vacio"><p>${escapar(err.message)}</p></div>`; }
+  try { await VISTAS[id](); } catch (err) {
+    panel.innerHTML = `<div class="vacio"><p>${escapar(err.message)}</p>
+      ${err.datos?.code === "NECESITA_2FA" ? '<p><a class="btn btn--primario" href="login.html">Activar en «Mi cuenta»</a></p>' : ""}</div>`;
+  }
   // Filtros: se aplican al escribir (con pausa) o al cambiar un select. La paginación conserva los filtros.
   let t;
   panel.addEventListener("input", e => {

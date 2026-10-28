@@ -78,6 +78,7 @@ switch (accion()) {
         responder(['ok' => true]);
 
     case 'borrar':
+        exigirReautenticacion();
         $id = entero($d['id'] ?? null) ?? fallar('Falta la materia.', 422);
         ejecutar('DELETE FROM materias WHERE id = ?', [$id]);
         registrar('materia_borrar', 'materia', $id);

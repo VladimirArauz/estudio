@@ -53,7 +53,7 @@ if (metodo() === 'GET') {
         if ($u['rol'] === 'alumno') {
             $cursos = todos(SQL_CURSOS . ' JOIN inscripciones i ON i.curso_id = c.id AND i.alumno_id = ? ORDER BY i.creado DESC', [$u['id']]);
         } else {
-            $cursos = todos(SQL_CURSOS . ($u['rol'] === 'admin' && !empty($_GET['todos']) ? '' : ' WHERE c.profesor_id = ' . $u['id']) . ' ORDER BY c.creado DESC');
+            $cursos = todos(SQL_CURSOS . (esAdmin() && !empty($_GET['todos']) ? '' : ' WHERE c.profesor_id = ' . $u['id']) . ' ORDER BY c.creado DESC');
             // Visitas por curso para «cuáles son más visitados».
             foreach ($cursos as &$c) {
                 $c['visitas'] = (int)valor('SELECT COUNT(*) FROM visitas WHERE ruta = ?', ['curso.html?id=' . $c['id']]);
@@ -74,7 +74,7 @@ if (metodo() === 'GET') {
         EXISTS(SELECT 1 FROM inscripciones i WHERE i.curso_id = c.id AND i.alumno_id = ?) inscrito
         FROM cursos c JOIN materias m ON m.id = c.materia_id JOIN usuarios u ON u.id = c.profesor_id WHERE c.id = ?', [$uid, $id]);
     if (!$c) fallar('Curso no encontrado.', 404);
-    $soyProfesor = $u && ($u['rol'] === 'admin' || (int)$c['profesor_id'] === $uid);
+    $soyProfesor = $u && (esAdmin() || (int)$c['profesor_id'] === $uid);
     $inscrito = (bool)$c['inscrito'];
     $c['alumnos'] = (int)$c['alumnos'];
     unset($c['inscrito']);
@@ -185,6 +185,7 @@ $d = entrada();
 switch (accion()) {
     case 'postular':
         $u = requiereRol('profesor');
+        limitar('postular:' . $u['id'], 10, 86400);
         $materia = entero($d['materia_id'] ?? null) ?? fallar('Falta la materia.', 422);
         if (!valor('SELECT 1 FROM materias WHERE id = ?', [$materia])) fallar('La materia no existe.', 404);
         $previa = valor('SELECT estado FROM postulaciones_profesor WHERE usuario_id = ? AND materia_id = ?', [$u['id'], $materia]);
@@ -198,7 +199,7 @@ switch (accion()) {
     case 'crear':
         $u = requiereRol('profesor', 'admin');
         $materia = entero($d['materia_id'] ?? null) ?? fallar('Falta la materia.', 422);
-        if ($u['rol'] !== 'admin' && !postulacionAprobada($u['id'], $materia)) fallar('Necesitas una postulación aprobada en esta materia para abrir un curso.', 403);
+        if (!esAdmin() && !postulacionAprobada($u['id'], $materia)) fallar('Necesitas una postulación aprobada en esta materia para abrir un curso.', 403);
         ejecutar('INSERT INTO cursos (materia_id, profesor_id, titulo, descripcion) VALUES (?, ?, ?, ?)',
             [$materia, $u['id'], texto($d, 'titulo', 160, true), texto($d, 'descripcion', 2000)]);
         $id = (int)db()->lastInsertId();

@@ -127,8 +127,15 @@ docs/        arquitectura y operación
 
 ## Seguridad
 
-- Contraseñas con `password_hash`; sesión regenerada al entrar; cookies HttpOnly + SameSite=Lax.
-- Token CSRF en todo POST; límite de intentos de inicio de sesión, de registros y de uso de IA.
+- Contraseñas con bcrypt (costo fijo 12) y política: mínimo 10 caracteres, sin las 10 000 más comunes ni el nombre o correo.
+- Verificación en dos pasos (TOTP) en «Mi cuenta»; **obligatoria para admin** (sin ella no hay privilegios de admin).
+  El secreto se guarda cifrado con `app_key` (AES-256-GCM) y hay 10 códigos de recuperación de un solo uso.
+- Sesión: cookie `Secure` + HttpOnly + SameSite=Lax, regenerada al entrar y al cambiar de rol; caduca a los 30 min sin uso
+  y a las 12 h (2 h para admin). Cambiar o restablecer la contraseña, o suspender la cuenta, cierra las demás sesiones.
+- Cambiar roles, suspender, restablecer contraseñas y borrar lo de otros pide confirmar la contraseña (y el 2FA).
+- Límites por conexión y por cuenta (`limitar()`): login sin bloqueo de cuentas ajenas, registro, subidas
+  (cuota diaria), IA (solo con sesión), postulaciones; respuesta uniforme exista o no el correo.
+- Token CSRF en todo POST.
 - Consultas preparadas; permisos por rol en cada endpoint (`requiereRol`, `esProfesorDe`, `estaInscrito`).
 - Los exámenes de curso se califican en el servidor: el alumno no recibe las respuestas hasta terminar y solo cuenta el primer intento.
 - CSP estricta (`script-src 'self'`, sin scripts en línea), `X-Frame-Options: DENY` y `nosniff`.

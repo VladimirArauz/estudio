@@ -59,7 +59,7 @@ function puedeVer(array $a): bool {
     if (in_array($a['seccion'], SECCIONES_PUBLICAS, true)) return true;
     $u = usuario();
     if (!$u) return false;
-    if ($u['rol'] === 'admin' || (int)$a['autor_id'] === $u['id']) return true;
+    if (esAdmin() || (int)$a['autor_id'] === $u['id']) return true;
     if ($a['seccion'] === 'curso') return esProfesorDe((int)$a['curso_id']) || estaInscrito((int)$a['curso_id']);
     if ($a['seccion'] === 'entrega') {
         $curso = valor('SELECT curso_id FROM actividades WHERE id = ?', [$a['actividad_id']]);
@@ -71,7 +71,7 @@ function puedeVer(array $a): bool {
 function puedeBorrar(array $a): bool {
     $u = usuario();
     if (!$u) return false;
-    if ($u['rol'] === 'admin' || (int)$a['autor_id'] === $u['id']) return true;
+    if (esAdmin() || (int)$a['autor_id'] === $u['id']) return true;
     return $a['seccion'] === 'curso' && esProfesorDe((int)$a['curso_id']);
 }
 

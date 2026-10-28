@@ -23,11 +23,15 @@ switch (accion()) {
 
     case 'generar':
         exigirPost();
+        // Con cuenta: así la cuota de Gemini no se gasta de forma anónima (sin sesión se usa el banco local).
+        $u = requiereRol('alumno', 'profesor', 'admin');
+        limitar('ia:' . $u['id'], 20, 600, 'Generaste muchos exámenes seguidos. Espera unos minutos.');
         generar(entrada());
 
     case 'guardar_intento':
         exigirPost();
         $u = requiereRol('alumno', 'profesor', 'admin');
+        limitar('intento:' . $u['id'], 120, 3600);
         $d = entrada();
         $total = max(0, min(200, (int)($d['total'] ?? 0)));
         $aciertos = max(0, min($total, (int)($d['aciertos'] ?? 0)));
@@ -85,9 +89,9 @@ function generar(array $d): never {
     }
 
     // Límite diario por usuario (o por IP para invitados), solo para llamadas reales.
-    $quien = usuario() ? 'u' . usuario()['id'] : 'ip' . ip();
+    $quien = 'u' . usuario()['id'];
     $usado = (int)valor('SELECT conteo FROM uso_ia WHERE quien = ? AND fecha = CURDATE()', [$quien]);
-    $limite = usuario() ? $c['limite_diario'] : (int)ceil($c['limite_diario'] / 4);
+    $limite = $c['limite_diario'];
     if ($usado >= $limite) responder(['ok' => false, 'code' => 'LIMITE', 'error' => "Llegaste al límite de {$limite} exámenes generados hoy. Mañana se renueva; mientras, usa el banco local."]);
 
     $texto = llamarGemini($prompt, $c['key'], $c['modelo']);
@@ -187,6 +191,8 @@ function construirPrompt(string $modo, ?string $materia, ?string $tema, int $n, 
 }
 
 function llamarGemini(string $prompt, string $key, string $modelo): string {
+    global $CONFIG;
+    if (!empty($CONFIG['gemini']['simulado'])) return respuestaSimulada($prompt);
     $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($modelo) . ':generateContent';
     $cuerpo = json_encode([
         'contents' => [['parts' => [['text' => $prompt]]]],
@@ -253,4 +259,21 @@ function normalizar(string $modo, array $d): array {
                 'explicacion' => $s($x['explicacion'] ?? ''), 'materia' => $s($x['materia'] ?? '', 80), 'tema' => $s($x['tema'] ?? '', 120)];
     }, $d['preguntas'] ?? [])));
     return $p ? ['preguntas' => $p] : [];
+}
+
+// Entorno de pruebas: respuesta fija con la forma que pide el prompt, sin llamar a Gemini.
+// Incluye el inicio del material de las guías para que las pruebas comprueben que se usó.
+function respuestaSimulada(string $prompt): string {
+    preg_match('/Genera (\d+)/', $prompt, $m);
+    $n = max(1, min(20, (int)($m[1] ?? 4)));
+    preg_match('/<material>\n(.{0,60})/su', $prompt, $g);
+    $fuente = isset($g[1]) ? ' [' . trim($g[1]) . ']' : '';
+    if (str_contains($prompt, '"tarjetas"')) {
+        return json_encode(['tarjetas' => array_map(fn($i) => ['frente' => "Concepto $i$fuente", 'reverso' => "Definición $i", 'tema' => 'Simulado'], range(1, $n))]);
+    }
+    if (str_contains($prompt, '"ejercicios"')) {
+        return json_encode(['ejercicios' => array_map(fn($i) => ['enunciado' => "Ejercicio $i$fuente", 'pasos' => ['Paso 1', 'Paso 2'], 'respuesta' => "$i", 'tema' => 'Simulado'], range(1, $n))]);
+    }
+    return json_encode(['preguntas' => array_map(fn($i) => ['pregunta' => "Pregunta simulada $i$fuente", 'opciones' => ['A', 'B', 'C', 'D'],
+        'correcta' => $i % 4, 'explicacion' => "Porque sí ($i).", 'materia' => 'Simulada', 'tema' => 'Simulado'], range(1, $n))]);
 }

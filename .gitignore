@@ -1,5 +1,6 @@
 # Secretos y datos locales
 config/config.local.php
+config/config.pruebas.php
 config/*.local.json
 config/admin-inicial.txt
 .env
@@ -15,3 +16,9 @@ procesador/.venv/
 __pycache__/
 *.pyc
 procesador/.cache/
+
+# Entorno de pruebas
+storage-pruebas/
+tests/.venv/
+tests/reportes/
+.pytest_cache/

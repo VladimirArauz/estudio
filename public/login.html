@@ -27,11 +27,13 @@
           <h2 class="lamina__titulo">Cambiar contraseña</h2>
           <form class="form" id="formPassword" novalidate>
             <div class="campo"><label for="passActual">Contraseña actual</label><input type="password" id="passActual" autocomplete="current-password" required></div>
-            <div class="campo"><label for="passNueva">Contraseña nueva</label><input type="password" id="passNueva" autocomplete="new-password" minlength="8" required>
-              <span class="campo__ayuda">Mínimo 8 caracteres.</span></div>
+            <div class="campo"><label for="passNueva">Contraseña nueva</label><input type="password" id="passNueva" autocomplete="new-password" minlength="10" required>
+              <span class="campo__ayuda">Mínimo 10 caracteres. Una frase de varias palabras es fácil de recordar y difícil de adivinar.</span></div>
             <p class="form__mensaje" role="alert"></p>
             <div class="form__acciones" style="justify-content: flex-start"><button class="btn btn--secundario" type="submit">Guardar contraseña</button></div>
           </form>
+          <h2 class="lamina__titulo" id="tituloDosPasos">Verificación en dos pasos</h2>
+          <div class="pila" id="dosPasos" aria-labelledby="tituloDosPasos"></div>
         </section>
         <div class="pestanas" role="tablist" aria-label="Tipo de acceso">
           <button class="chip" role="tab" id="tabEntrar" aria-selected="true" aria-controls="formEntrar">Iniciar sesión</button>
@@ -53,6 +55,19 @@
           </div>
         </form>
 
+        <form class="form" id="formCodigo" novalidate hidden>
+          <p class="texto-2">Tu cuenta tiene verificación en dos pasos. Abre tu app de autenticación y escribe el código de 6 dígitos
+            (o uno de tus códigos de recuperación).</p>
+          <div class="campo">
+            <label for="codigoEntrar">Código de verificación</label>
+            <input id="codigoEntrar" inputmode="numeric" autocomplete="one-time-code" maxlength="11" required>
+          </div>
+          <p class="form__mensaje form__mensaje--error" role="alert"></p>
+          <div class="form__acciones" style="justify-content: flex-start">
+            <button class="btn btn--primario" type="submit">Verificar</button>
+          </div>
+        </form>
+
         <form class="form" id="formRegistro" role="tabpanel" aria-labelledby="tabRegistro" novalidate hidden>
           <div class="campo">
             <label for="nombreRegistro">Nombre completo</label>
@@ -64,8 +79,8 @@
           </div>
           <div class="campo">
             <label for="passRegistro">Contraseña</label>
-            <input type="password" id="passRegistro" autocomplete="new-password" minlength="8" required>
-            <span class="campo__ayuda">Mínimo 8 caracteres.</span>
+            <input type="password" id="passRegistro" autocomplete="new-password" minlength="10" required>
+            <span class="campo__ayuda">Mínimo 10 caracteres. Una frase de varias palabras es fácil de recordar y difícil de adivinar.</span>
           </div>
           <fieldset class="campo" style="border: 0; padding: 0">
             <legend class="campo__etiqueta">Quiero entrar como</legend>
@@ -104,6 +119,7 @@
   <script src="scripts/api.js"></script>
   <script src="scripts/nav.js"></script>
   <script src="scripts/analitica.js"></script>
+  <script src="scripts/vendor/qrcode.min.js"></script>
   <script src="scripts/login.js"></script>
 </body>
 </html>

@@ -2,6 +2,7 @@
 // Panel de administración: todo lo que pasa en la plataforma, resumido por secciones.
 require_once dirname(__DIR__, 2) . '/src/comun.php';
 require_once dirname(__DIR__, 2) . '/src/archivos.php';
+require_once dirname(__DIR__, 2) . '/src/contrasenas.php';
 
 $yo = requiereRol('admin');
 const POR_PAGINA = 50;
@@ -136,27 +137,30 @@ if (metodo() === 'GET') {
 exigirPost();
 $d = entrada();
 $id = entero($d['id'] ?? null) ?? fallar('Falta el identificador.', 422);
+// Cambiar roles, suspender o restablecer contraseñas pide confirmar la contraseña (y el 2FA) en los últimos 5 min.
+if (in_array(accion(), ['usuario_rol', 'usuario_estado', 'usuario_password'], true)) exigirReautenticacion();
 
 switch (accion()) {
     case 'usuario_rol':
         $rol = $d['rol'] ?? '';
         if (!in_array($rol, ['admin', 'profesor', 'alumno'], true)) fallar('Rol no válido.', 422);
         if ($id === $yo['id'] && $rol !== 'admin') fallar('No puedes quitarte el rol de admin a ti mismo.', 409);
-        ejecutar('UPDATE usuarios SET rol = ? WHERE id = ?', [$rol, $id]);
+        ejecutar('UPDATE usuarios SET rol = ?, sesion_version = sesion_version + 1 WHERE id = ?', [$rol, $id]);
         registrar('admin_usuario_rol', 'usuario', $id, ['rol' => $rol]);
         responder(['ok' => true]);
 
     case 'usuario_estado':
         $estado = ($d['estado'] ?? '') === 'suspendido' ? 'suspendido' : 'activo';
         if ($id === $yo['id']) fallar('No puedes suspender tu propia cuenta.', 409);
-        ejecutar('UPDATE usuarios SET estado = ? WHERE id = ?', [$estado, $id]);
+        ejecutar('UPDATE usuarios SET estado = ?, sesion_version = sesion_version + 1 WHERE id = ?', [$estado, $id]);
         registrar('admin_usuario_estado', 'usuario', $id, ['estado' => $estado]);
         responder(['ok' => true]);
 
     case 'usuario_password':
         // Contraseña temporal: se muestra una sola vez al admin para que se la entregue a la persona.
-        $temporal = rtrim(strtr(base64_encode(random_bytes(9)), '+/', 'Kx'), '=');
-        ejecutar('UPDATE usuarios SET password_hash = ? WHERE id = ?', [password_hash($temporal, PASSWORD_DEFAULT), $id]);
+        if ($id === $yo['id']) fallar('Cambia tu propia contraseña desde «Mi cuenta».', 409);
+        $temporal = rtrim(strtr(base64_encode(random_bytes(12)), '+/', 'Kx'), '=');
+        ejecutar('UPDATE usuarios SET password_hash = ?, sesion_version = sesion_version + 1 WHERE id = ?', [hashContrasena($temporal), $id]);
         registrar('admin_usuario_password', 'usuario', $id);
         responder(['ok' => true, 'temporal' => $temporal]);
 
