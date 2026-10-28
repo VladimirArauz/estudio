@@ -6,6 +6,7 @@ require_once dirname(__DIR__, 2) . '/src/totp.php';
 
 const VENTANA_LOGIN = 900; // 15 min
 // password_verify corre siempre (exista o no el correo) para que el tiempo de respuesta no delate cuentas.
+// Es el hash de una cadena aleatoria descartada: no corresponde a ninguna contraseña. nosemgrep
 const HASH_FICTICIO = '$2y$12$QkRwtloHYxOSLfUwH6bd8eL0qAZJI3znYa18/ySu3YuMh/iy15A12';
 
 switch (accion()) {

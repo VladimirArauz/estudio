@@ -109,13 +109,13 @@ if (metodo() === 'GET') {
             $dias = max(1, min(365, (int)($_GET['dias'] ?? 30)));
             responder([
                 'rutas' => todos("SELECT ruta, COUNT(*) visitas, COUNT(DISTINCT usuario_id) personas, AVG(segundos) segundos
-                    FROM visitas WHERE inicio > NOW() - INTERVAL $dias DAY GROUP BY ruta ORDER BY visitas DESC LIMIT 25"),
+                    FROM visitas WHERE inicio > NOW() - INTERVAL ? DAY GROUP BY ruta ORDER BY visitas DESC LIMIT 25", [$dias]),
                 'secciones' => todos("SELECT COALESCE(seccion, 'otra') seccion, COUNT(*) visitas, AVG(segundos) segundos, SUM(segundos) total
-                    FROM visitas WHERE inicio > NOW() - INTERVAL $dias DAY GROUP BY COALESCE(seccion, 'otra') ORDER BY visitas DESC"),
+                    FROM visitas WHERE inicio > NOW() - INTERVAL ? DAY GROUP BY COALESCE(seccion, 'otra') ORDER BY visitas DESC", [$dias]),
                 'por_dia' => todos("SELECT DATE(inicio) dia, COUNT(*) visitas, COUNT(DISTINCT usuario_id) personas FROM visitas
-                    WHERE inicio > NOW() - INTERVAL $dias DAY GROUP BY DATE(inicio) ORDER BY dia"),
+                    WHERE inicio > NOW() - INTERVAL ? DAY GROUP BY DATE(inicio) ORDER BY dia", [$dias]),
                 'usuarios' => todos("SELECT u.nombre, u.rol, SUM(v.segundos) segundos, COUNT(*) visitas FROM visitas v JOIN usuarios u ON u.id = v.usuario_id
-                    WHERE v.inicio > NOW() - INTERVAL $dias DAY GROUP BY u.id ORDER BY segundos DESC LIMIT 15"),
+                    WHERE v.inicio > NOW() - INTERVAL ? DAY GROUP BY u.id ORDER BY segundos DESC LIMIT 15", [$dias]),
                 'dias' => $dias,
             ]);
 

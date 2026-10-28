@@ -102,7 +102,7 @@ if (metodo() === 'GET') {
             $act = entero($_GET['actividad_id'] ?? null) ?? fallar('Falta la actividad.', 422);
             responder(['entregas' => todos('SELECT u.id alumno_id, u.nombre alumno, e.id, e.archivo_id, e.comentario_alumno, e.calificacion, e.comentario_profesor, e.entregado,
                     ar.titulo archivo, ar.estado archivo_estado, a.fecha_limite, (e.entregado > a.fecha_limite) tarde
-                FROM inscripciones i JOIN usuarios u ON u.id = i.alumno_id JOIN actividades a ON a.id = ?
+                FROM inscripciones i JOIN usuarios u ON u.id = i.alumno_id JOIN actividades a ON a.id = ? AND a.curso_id = i.curso_id
                 LEFT JOIN entregas e ON e.actividad_id = a.id AND e.alumno_id = u.id LEFT JOIN archivos ar ON ar.id = e.archivo_id
                 WHERE i.curso_id = ? ORDER BY u.nombre', [$act, $id])]);
 
@@ -335,10 +335,12 @@ switch (accion()) {
         }
         $total = count($preguntas);
         if (!$esProf) {
-            ejecutar('INSERT INTO intentos_examen (examen_id, usuario_id, modo, materia, titulo, detalle, aciertos, total, puntaje, duracion_seg) VALUES (?, ?, "curso", ?, ?, ?, ?, ?, ?, ?)', [
+            // INSERT IGNORE + índice único (examen_id, usuario_id): dos envíos simultáneos no registran dos intentos.
+            $nuevo = ejecutar('INSERT IGNORE INTO intentos_examen (examen_id, usuario_id, modo, materia, titulo, detalle, aciertos, total, puntaje, duracion_seg) VALUES (?, ?, "curso", ?, ?, ?, ?, ?, ?, ?)', [
                 $xid, $u['id'], valor('SELECT nombre FROM materias WHERE id = ?', [$x['materia_id']]), $x['titulo'],
-                json_encode($detalle), $aciertos, $total, $total ? round($aciertos * 100 / $total, 2) : 0, isset($d['duracion']) ? (int)$d['duracion'] : null,
+                json_encode($detalle), $aciertos, $total, $total ? round($aciertos * 100 / $total, 2) : 0, isset($d['duracion']) ? max(0, min(86400, (int)$d['duracion'])) : null,
             ]);
+            if (!$nuevo) fallar('Ya resolviste este examen; solo cuenta tu primer intento.', 409);
             registrar('examen_intento', 'examen', $xid, ['aciertos' => $aciertos, 'total' => $total]);
         }
         responder(['aciertos' => $aciertos, 'total' => $total,
@@ -352,8 +354,8 @@ switch (accion()) {
         $ep = (int)($d['estrellas_profesor'] ?? 0);
         if ($ec < 1 || $ec > 5 || $ep < 1 || $ep > 5) fallar('Elige de 1 a 5 estrellas para el curso y para el profesor.', 422);
         if (valor('SELECT 1 FROM evaluaciones_curso WHERE curso_id = ? AND alumno_id = ?', [$id, $u['id']])) fallar('Ya evaluaste este curso.', 409);
-        ejecutar('INSERT INTO evaluaciones_curso (curso_id, alumno_id, estrellas_curso, estrellas_profesor, comentario) VALUES (?, ?, ?, ?, ?)',
-            [$id, $u['id'], $ec, $ep, texto($d, 'comentario', 2000)]);
+        if (!ejecutar('INSERT IGNORE INTO evaluaciones_curso (curso_id, alumno_id, estrellas_curso, estrellas_profesor, comentario) VALUES (?, ?, ?, ?, ?)',
+            [$id, $u['id'], $ec, $ep, texto($d, 'comentario', 2000)])) fallar('Ya evaluaste este curso.', 409);
         registrar('curso_evaluar', 'curso', $id, ['curso' => $ec, 'profesor' => $ep]);
         responder(['ok' => true], 201);
 

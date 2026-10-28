@@ -47,8 +47,23 @@ def esc(texto) -> str:
     return html.escape(str(texto if texto is not None else ""), quote=True)
 
 
+# Valores permitidos para atributos que la página usa (anclas del índice, folio y marcas de tiempo).
+# Así el HTML de un archivo subido no puede crear ids arbitrarios que choquen con los de la página (DOM clobbering).
+VALORES = {
+    "id": re.compile(r"^(pag-\d+|[shd]\d+)$"),
+    "data-pagina": re.compile(r"^\d+$"),
+    "data-seek": re.compile(r"^\d+(\.\d+)?$"),
+}
+
+
+def _atributo_permitido(etiqueta: str, nombre: str, valor: str) -> bool:
+    if nombre in VALORES:
+        return bool(VALORES[nombre].match(valor))
+    return nombre in ATRIBUTOS["*"] or nombre in ATRIBUTOS.get(etiqueta, [])
+
+
 def sanear(fragmento: str) -> str:
-    return bleach.clean(fragmento, tags=ETIQUETAS, attributes=ATRIBUTOS, protocols=["http", "https", "mailto"], strip=True)
+    return bleach.clean(fragmento, tags=ETIQUETAS, attributes=_atributo_permitido, protocols=["http", "https", "mailto"], strip=True)
 
 
 def texto_plano(fragmento: str) -> str:

@@ -45,6 +45,8 @@ function entrada(): array {
     if ($datos !== null) return $datos;
     $tipo = $_SERVER['CONTENT_TYPE'] ?? '';
     if (str_starts_with($tipo, 'application/json')) {
+        // Ningún JSON legítimo de la API pasa de 1 MB (los archivos van como multipart a subir.php).
+        if ((int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 1024 * 1024) fallar('La solicitud es demasiado grande.', 413);
         $datos = json_decode(file_get_contents('php://input'), true) ?: [];
     } else {
         $datos = $_POST;
