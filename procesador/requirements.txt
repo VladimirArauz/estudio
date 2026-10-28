@@ -1,11 +1,13 @@
-PyMySQL>=1.1
-PyMuPDF>=1.26
-python-docx>=1.1
-python-pptx>=1.0
-openpyxl>=3.1
-Pillow>=11
-Markdown>=3.7
-Pygments>=2.19
-bleach>=6.2
-faster-whisper>=1.1
-defusedxml>=0.7
+# Dependencias directas del procesador (versiones exactas). El árbol completo está en requirements.lock.
+# Actualizar: pip install -U <paquete>, correr las pruebas, pip freeze > requirements.lock y make auditoria-deps.
+PyMySQL==1.2.3
+PyMuPDF==2.0
+python-docx==1.2.0
+python-pptx==1.0.2
+openpyxl==3.1.5
+Pillow==13.0.0
+Markdown==3.11.2
+Pygments==2.21.0
+bleach==6.4.0
+faster-whisper==1.2.1
+defusedxml==0.7.1

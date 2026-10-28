@@ -9,7 +9,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
+import signal
+import zipfile
 import subprocess
 import sys
 import time
@@ -20,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import pymysql  # noqa: E402
 
-from comun import RAIZ, STORAGE, Trabajo, permisos, sanear, texto_plano  # noqa: E402
+from comun import RAIZ, Trabajo, permisos, sanear, texto_plano  # noqa: E402
 from procesadores import documento, hoja, imagen, medios, otro, pdf, presentacion, texto  # noqa: E402
 
 PROCESADORES = {
@@ -36,17 +39,60 @@ PROCESADORES = {
 }
 PHP = "/opt/lampp/bin/php"
 
+# Tiempo máximo por archivo: un archivo malicioso o roto no debe dejar al worker colgado.
+TIEMPO_MAX = {"audio": 2 * 3600, "video": 3 * 3600}
+TIEMPO_MAX_OTROS = 15 * 60
+# Office/OpenDocument son ZIP: se rechazan los que se inflan demasiado al descomprimir (zip bomb).
+EXT_ZIP = {"docx", "pptx", "xlsx", "odt", "odp", "ods"}
+MAX_DESCOMPRIMIDO = 500 * 1024 * 1024
+MAX_PROPORCION = 200
+
+
+class TiempoAgotado(Exception):
+    pass
+
+
+def _alarma(_senal, _marco):
+    raise TiempoAgotado("El archivo tardó demasiado en procesarse y se canceló.")
+
+
+def revisar_zip(ruta: Path) -> None:
+    if not zipfile.is_zipfile(ruta):
+        return
+    with zipfile.ZipFile(ruta) as z:
+        total = sum(i.file_size for i in z.infolist())
+        comprimido = sum(i.compress_size for i in z.infolist()) or 1
+        if total > MAX_DESCOMPRIMIDO or total / comprimido > MAX_PROPORCION or len(z.infolist()) > 20000:
+            raise ValueError("El archivo está comprimido de forma sospechosa (se inflaría demasiado al abrirlo).")
+
 
 def log(*partes):
     print(time.strftime("%Y-%m-%d %H:%M:%S"), *partes, flush=True)
 
 
-def conectar():
-    """Lee las credenciales de config/config.php (única fuente de verdad)."""
+def configuracion() -> dict:
+    """Credenciales de la BD y carpeta de storage.
+
+    Como servicio (usuario estudio-worker, sin acceso a config/) llegan por variables de entorno desde
+    /etc/estudio/worker.env. A mano se leen de config/config.php (respeta ESTUDIO_ENTORNO=pruebas).
+    """
+    if os.environ.get("ESTUDIO_DB_HOST"):
+        e = os.environ
+        return {"db": {"host": e["ESTUDIO_DB_HOST"], "port": e.get("ESTUDIO_DB_PORT", "3306"), "name": e["ESTUDIO_DB_NAME"],
+                       "user": e["ESTUDIO_DB_USER"], "pass": e["ESTUDIO_DB_PASS"]},
+                "storage": e.get("ESTUDIO_STORAGE", str(RAIZ / "storage"))}
     salida = subprocess.run(
-        [PHP, "-r", 'require "config/config.php"; echo json_encode($CONFIG["db"]);'],
+        [PHP, "-r", 'require "config/config.php"; echo json_encode(["db" => $CONFIG["db"], "storage" => $CONFIG["subidas"]["dir"]]);'],
         cwd=RAIZ, capture_output=True, text=True, check=True).stdout
-    c = json.loads(salida)
+    return json.loads(salida)
+
+
+CONFIG = configuracion()
+STORAGE = Path(CONFIG["storage"])
+
+
+def conectar():
+    c = CONFIG["db"]
     return pymysql.connect(host=c["host"], port=int(c["port"]), user=c["user"], password=c["pass"], database=c["name"],
                            charset="utf8mb4", autocommit=True, cursorclass=pymysql.cursors.DictCursor, connect_timeout=10)
 
@@ -79,7 +125,14 @@ def procesar(con, fila: dict) -> None:
     try:
         if not original.is_file():
             raise FileNotFoundError("El archivo original ya no existe en el servidor.")
-        html, resumen = PROCESADORES.get(t.tipo, otro.procesar)(t)
+        if ext in EXT_ZIP:
+            revisar_zip(original)
+        signal.signal(signal.SIGALRM, _alarma)
+        signal.alarm(TIEMPO_MAX.get(t.tipo, TIEMPO_MAX_OTROS))
+        try:
+            html, resumen = PROCESADORES.get(t.tipo, otro.procesar)(t)
+        finally:
+            signal.alarm(0)
         (salida / "contenido.html").write_text(sanear(html), encoding="utf-8")
         if fila["seccion"] == "guia":  # api/ia.php toma fragmentos de aquí para armar los exámenes
             (salida / "texto.txt").write_text(texto_plano(html), encoding="utf-8")

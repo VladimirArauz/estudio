@@ -34,8 +34,8 @@ Después de reiniciar la PC solo hace falta el paso 1: los servicios `estudio-tu
 | `journalctl -u estudio-worker -f` | Ver en vivo qué archivo se está procesando |
 | `curl https://localhost/estudio/api/salud.php` | Debe responder `{"db":"ok"}` |
 | `bin/tunel.sh` | Abrir el túnel a mano (si no usas los servicios) |
-| `procesador/.venv/bin/python procesador/worker.py --una-vez` | Procesar la cola a mano y salir |
-| `procesador/.venv/bin/python procesador/worker.py --id 12` | Volver a procesar un archivo |
+| `sudo systemctl restart estudio-worker` | Reiniciar el worker (tras cambiar el procesador) |
+| `make auditoria-deps` | Buscar vulnerabilidades conocidas en las dependencias de Python |
 | `/opt/lampp/bin/php bin/migrar.php` | Crear o actualizar las tablas (`sql/*.sql`) |
 | `/opt/lampp/bin/php bin/crear-admin.php correo "Nombre" [contraseña]` | Crear o restablecer un admin |
 
@@ -102,6 +102,8 @@ Al registrarse se elige alumno o profesor. Los admin solo se crean con `bin/crea
 | Imagen | `imagen.py` | Versión web optimizada y metadatos |
 | Audio | `medios.py` | Reproductor, forma de onda y transcripción con marcas de tiempo (faster-whisper) |
 | Video | `medios.py` | MP4 web, póster, 8 «momentos» y transcripción sincronizada |
+
+El worker corre **aislado** (usuario `estudio-worker`, ver `bin/systemd/estudio-worker.service`): solo ve `procesador/` (lectura) y `storage/`, no tiene salida a internet (solo `localhost` para la BD), recibe únicamente las credenciales de la BD (`/etc/estudio/worker.env`, solo root) y tiene tope de memoria, procesos y tiempo por archivo. Rechaza Office/OpenDocument que se inflan demasiado al descomprimir e imágenes de más de 60 MP. `sudo bin/worker-pruebas.sh` lo corre igual de aislado contra el entorno de pruebas.
 
 Todo el HTML generado pasa por `bleach` con una lista blanca de etiquetas. Los archivos se sirven con `api/archivo.php`, que comprueba permisos y soporta Range para adelantar audio y video.
 

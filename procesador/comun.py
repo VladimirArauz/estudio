@@ -8,13 +8,19 @@ import re
 import shutil
 import subprocess
 import tempfile
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import bleach
+from PIL import Image
+
+# Imágenes enormes (bombas de descompresión): Pillow las rechaza en lugar de agotar la memoria.
+# Por defecto solo avisa hasta el doble del límite; aquí el aviso también es error.
+Image.MAX_IMAGE_PIXELS = 60_000_000
+warnings.simplefilter("error", Image.DecompressionBombWarning)
 
 RAIZ = Path(__file__).resolve().parent.parent
-STORAGE = RAIZ / "storage"
 
 ETIQUETAS = {
     "h2", "h3", "h4", "p", "br", "hr", "ul", "ol", "li", "strong", "em", "b", "i", "u", "s", "sub", "sup",
@@ -120,8 +126,12 @@ def ficha(filas: list[tuple[str, str]]) -> str:
 
 
 def permisos(carpeta: Path) -> None:
-    """Apache (usuario daemon) debe poder leer lo generado."""
+    """Apache (grupo daemon) debe poder leer y borrar lo generado.
+
+    El grupo daemon ya llega heredado (generados/ tiene setgid). No se pide el bit setgid aquí: el servicio
+    corre con RestrictSUIDSGID=yes, que rechaza cualquier chmod que lo incluya.
+    """
     for raiz, dirs, archivos in os.walk(carpeta):
-        os.chmod(raiz, 0o2775)
+        os.chmod(raiz, 0o775)
         for a in archivos:
             os.chmod(os.path.join(raiz, a), 0o664)

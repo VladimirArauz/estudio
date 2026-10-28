@@ -4,16 +4,68 @@ After=estudio-tunel.service
 Wants=estudio-tunel.service
 
 [Service]
-User=aumf-ubuntu-080704
-Group=daemon
+# Procesa archivos que sube cualquiera: corre aislado, con un usuario propio y sin ver nada más.
+User=estudio-worker
+Group=estudio-worker
 UMask=0002
-WorkingDirectory=/home/aumf-ubuntu-080704/estudio
+# Solo las credenciales de la BD y la carpeta de storage (sin key de Gemini ni app_key). Solo root lo lee.
+EnvironmentFile=/etc/estudio/worker.env
 Environment=HF_HOME=/home/aumf-ubuntu-080704/estudio/procesador/.cache
+Environment=HF_HUB_OFFLINE=1
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/home/aumf-ubuntu-080704/estudio/procesador/.venv/bin/python procesador/worker.py
+Environment=PYTHONDONTWRITEBYTECODE=1
+# LibreOffice necesita un HOME escribible: el /tmp privado del servicio (PrivateTmp).
+Environment=HOME=/tmp
+Environment=XDG_CACHE_HOME=/tmp/.cache
+WorkingDirectory=/home/aumf-ubuntu-080704/estudio
+ExecStart=/home/aumf-ubuntu-080704/estudio/procesador/.venv/bin/python -I procesador/worker.py
 Restart=always
 RestartSec=10
 Nice=10
+
+# Sistema de archivos: /home vacío salvo el procesador (solo lectura) y storage (originales solo lectura).
+ProtectSystem=strict
+ProtectHome=tmpfs
+BindReadOnlyPaths=/home/aumf-ubuntu-080704/estudio/procesador
+BindReadOnlyPaths=/home/aumf-ubuntu-080704/estudio/storage/originales
+BindPaths=/home/aumf-ubuntu-080704/estudio/storage/generados
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectProc=invisible
+
+# Red: solo localhost (el túnel a la BD en 127.0.0.1:3307). Un archivo malicioso no puede sacar datos.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+IPAddressDeny=any
+IPAddressAllow=localhost
+
+# Privilegios y kernel.
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @mount @debug @cpu-emulation @obsolete
+# Una llamada fuera de la lista devuelve error en vez de matar el proceso (LibreOffice usa mbind al cerrar).
+SystemCallErrorNumber=EPERM
+# Borra la IPC del usuario y grupo del worker al detenerlo. Nunca pongas aquí Group=daemon: borraría el mutex de Apache.
+RemoveIPC=yes
+KeyringMode=private
+
+# Recursos (Whisper + LibreOffice caben de sobra).
+MemoryMax=3G
+TasksMax=128
+CPUQuota=300%
+LimitCORE=0
 
 [Install]
 WantedBy=multi-user.target
