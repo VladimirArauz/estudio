@@ -24,7 +24,7 @@ sudo ln -sfn "$PWD/public" /opt/lampp/htdocs/estudio
 sudo bin/instalar-servicios.sh
 ```
 
-Abre **http://localhost/estudio/**.
+Abre **https://localhost/estudio/** (HTTP redirige a HTTPS; ver `docs/servidor.md`).
 
 Después de reiniciar la PC solo hace falta el paso 1: los servicios `estudio-tunel` y `estudio-worker` arrancan solos.
 
@@ -32,7 +32,7 @@ Después de reiniciar la PC solo hace falta el paso 1: los servicios `estudio-tu
 |---|---|
 | `systemctl status estudio-tunel estudio-worker` | Ver si el túnel y el worker están corriendo |
 | `journalctl -u estudio-worker -f` | Ver en vivo qué archivo se está procesando |
-| `curl http://localhost/estudio/api/salud.php` | Debe responder `{"db":"ok"}` |
+| `curl https://localhost/estudio/api/salud.php` | Debe responder `{"db":"ok"}` |
 | `bin/tunel.sh` | Abrir el túnel a mano (si no usas los servicios) |
 | `procesador/.venv/bin/python procesador/worker.py --una-vez` | Procesar la cola a mano y salir |
 | `procesador/.venv/bin/python procesador/worker.py --id 12` | Volver a procesar un archivo |

@@ -1,22 +1,34 @@
-# Seguridad del sitio en Apache (XAMPP).
+# Seguridad del sitio en Apache (XAMPP). Apache sirve solo public/; lo privado vive fuera.
 
-# Sin listados de directorio.
-Options -Indexes
+# Sin listados de directorio ni negociación de contenido (evita que /index devuelva index.html.bak, etc.).
+Options -Indexes -MultiViews
 
-# Nada que empiece con punto (.git, .vscode, .user.ini, .gitignore…) ni documentos internos.
+# Nada que empiece con punto (.user.ini, .gitignore…), salvo /.well-known/.
 <FilesMatch "^\.">
   Require all denied
 </FilesMatch>
 RewriteEngine On
+
+# Todo por HTTPS (308 conserva el método y el cuerpo de los POST).
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=308,L]
+
 RewriteRule (^|/)\.(?!well-known/) - [F]
-RewriteRule ^(bin|config|sql|procesador|storage)(/|$) - [F]
+# Segunda capa por si alguien vuelve a servir la raíz del proyecto.
+RewriteRule ^(bin|config|src|sql|procesador|storage|tests|docs)(/|$) - [F]
 
 <IfModule mod_headers.c>
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "DENY"
   Header always set Referrer-Policy "same-origin"
-  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+  Header always set Cross-Origin-Resource-Policy "same-origin"
+  Header always set X-Permitted-Cross-Domain-Policies "none"
+  # HSTS solo con un dominio real: los navegadores lo ignoran en IPs y en «localhost» se aplicaría a
+  # todos los puertos (rompería otros proyectos servidos por HTTP en localhost:8081).
+  Header always set Strict-Transport-Security "max-age=31536000" "expr=%{HTTPS} == 'on' && %{HTTP_HOST} !~ /^(localhost|127\.|\[::1\]|\d+\.\d+\.\d+\.\d+)/"
   # Sin scripts en línea: todo el JS vive en scripts/. Los estilos en línea (style="") sí se usan.
   # api/archivo.php manda su propia CSP más estricta para los archivos que sirve.
-  Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'" "expr=%{REQUEST_URI} !~ m#/api/archivo\.php#"
+  Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests" "expr=%{REQUEST_URI} !~ m#/api/archivo\.php#"
 </IfModule>

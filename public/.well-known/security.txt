@@ -1,0 +1,4 @@
+Contact: mailto:axel.morales.f2000@gmail.com
+Expires: 2027-10-27T00:00:00.000Z
+Preferred-Languages: es, en
+Policy: https://github.com/VladimirArauz/estudio/blob/main/SECURITY.md

@@ -7,7 +7,7 @@ Ver «Arranque rápido» en el README. Tras reiniciar la PC basta con `sudo /opt
 ## Comprobaciones
 | Comando | Esperado |
 |---|---|
-| `curl http://localhost/estudio/api/salud.php` | `{"db":"ok"}` |
+| `curl https://localhost/estudio/api/salud.php` | `{"db":"ok"}` |
 | `systemctl is-active estudio-tunel estudio-worker` | `active` dos veces |
 | `make pruebas-e2e` / `make pruebas-seguridad` | todo en verde |
 
