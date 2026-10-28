@@ -69,7 +69,8 @@ const Archivos = (() => {
     if (lista.some(a => a.estado === "pendiente" || a.estado === "procesando")) vigilar.t = setTimeout(recargar, 5000);
   }
 
-  // Diálogo de subida. opciones: { seccion, materia_id, curso_id, actividad_id, materias, titulo, alTerminar }
+  // Diálogo de subida. opciones: { seccion, materia_id, curso_id, actividad_id, materias, titulo, alTerminar, acepta, ayudaArchivo,
+  //   extras: [{ campo, etiqueta, opciones: [[valor, texto]], vacio, ayuda }] } — selects adicionales que se envían tal cual.
   function abrir(opciones) {
     const dialogo = document.createElement("dialog");
     dialogo.className = "modal";
@@ -80,8 +81,8 @@ const Archivos = (() => {
         <h2 class="modal__titulo">${escapar(opciones.titulo || "Subir archivo")}</h2>
         <div class="campo">
           <label for="subirArchivo">Archivo(s)</label>
-          <input type="file" id="subirArchivo" name="archivo" accept="${ACEPTA}" multiple required>
-          <span class="campo__ayuda">PDF, Word, PowerPoint, Excel, texto, imagen, audio o video. Máximo 200 MB por archivo.</span>
+          <input type="file" id="subirArchivo" name="archivo" accept="${opciones.acepta || ACEPTA}" multiple required>
+          <span class="campo__ayuda">${escapar(opciones.ayudaArchivo || "PDF, Word, PowerPoint, Excel, texto, imagen, audio o video.")} Máximo 200 MB por archivo.</span>
         </div>
         <div class="campo">
           <label for="subirTitulo">Título (opcional)</label>
@@ -90,8 +91,14 @@ const Archivos = (() => {
         ${conMateria ? `<div class="campo">
           <label for="subirMateria">Materia</label>
           <select id="subirMateria"><option value="">General (sin materia)</option>
-            ${opciones.materias.map(m => `<option value="${m.id}">${escapar(m.nombre)}</option>`).join("")}</select>
+            ${opcionesMaterias(opciones.materias)}</select>
         </div>` : ""}
+        ${(opciones.extras || []).map(x => `<div class="campo">
+          <label for="subirExtra_${x.campo}">${escapar(x.etiqueta)}</label>
+          <select id="subirExtra_${x.campo}" data-extra="${x.campo}">${x.vacio ? `<option value="">${escapar(x.vacio)}</option>` : ""}
+            ${x.opciones.map(([v, t]) => `<option value="${escapar(v)}">${escapar(t)}</option>`).join("")}</select>
+          ${x.ayuda ? `<span class="campo__ayuda">${escapar(x.ayuda)}</span>` : ""}
+        </div>`).join("")}
         <p class="form__mensaje" role="status" aria-live="polite"></p>
         <div class="form__acciones">
           <button type="button" class="btn btn--secundario" data-cancelar>Cancelar</button>
@@ -126,6 +133,7 @@ const Archivos = (() => {
           if (materia) datos.append("materia_id", materia);
           if (opciones.curso_id) datos.append("curso_id", opciones.curso_id);
           if (opciones.actividad_id) datos.append("actividad_id", opciones.actividad_id);
+          form.querySelectorAll("[data-extra]").forEach(s => s.value && datos.append(s.dataset.extra, s.value));
           await API.subir("subir.php", datos, p => {
             mensaje.className = "form__mensaje";
             mensaje.textContent = `Subiendo ${archivo.name}: ${Math.round(p * 100)} %`;

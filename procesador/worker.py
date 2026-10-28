@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import pymysql  # noqa: E402
 
-from comun import RAIZ, STORAGE, Trabajo, permisos, sanear  # noqa: E402
+from comun import RAIZ, STORAGE, Trabajo, permisos, sanear, texto_plano  # noqa: E402
 from procesadores import documento, hoja, imagen, medios, otro, pdf, presentacion, texto  # noqa: E402
 
 PROCESADORES = {
@@ -81,6 +81,8 @@ def procesar(con, fila: dict) -> None:
             raise FileNotFoundError("El archivo original ya no existe en el servidor.")
         html, resumen = PROCESADORES.get(t.tipo, otro.procesar)(t)
         (salida / "contenido.html").write_text(sanear(html), encoding="utf-8")
+        if fila["seccion"] == "guia":  # api/ia.php toma fragmentos de aquí para armar los exámenes
+            (salida / "texto.txt").write_text(texto_plano(html), encoding="utf-8")
         t.datos["segundos_proceso"] = round(time.time() - inicio, 1)
         (salida / "datos.json").write_text(json.dumps(t.datos, ensure_ascii=False), encoding="utf-8")
         permisos(salida)

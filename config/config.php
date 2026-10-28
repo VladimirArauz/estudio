@@ -15,7 +15,7 @@ $CONFIG = array_replace_recursive([
     ],
     'gemini' => [
         'key' => '',
-        'modelo' => 'gemini-2.5-flash-lite',
+        'modelo' => 'gemini-3.5-flash-lite',
         'cache_ttl' => 604800,   // 7 días
         'limite_diario' => 60,   // peticiones por usuario al día
     ],

@@ -2,7 +2,7 @@
 
 let panel = document.getElementById("panelAdmin");
 const SECCIONES = [["resumen", "Resumen"], ["usuarios", "Usuarios"], ["materias", "Materias"], ["contenido", "Contenido"],
-  ["postulaciones", "Postulaciones"], ["cursos", "Cursos"], ["examenes", "Exámenes"], ["analitica", "Analítica"], ["logs", "Logs"]];
+  ["postulaciones", "Postulaciones"], ["cursos", "Cursos"], ["examenes", "Exámenes"], ["guias", "Guías de examen"], ["analitica", "Analítica"], ["logs", "Logs"]];
 const ROLES = { admin: "Admin", profesor: "Profesor", alumno: "Alumno" };
 
 const n = v => Math.round(Number(v) || 0);
@@ -104,20 +104,22 @@ async function materias() {
   panel.innerHTML = `
     <div class="herramientas"><p class="rotulo">${lista.length} materias · se muestran en la lámina Apoyo</p>
       <button class="btn btn--secundario" type="button" data-nueva>${icono("mas", "icono--16")} Agregar materia</button></div>
-    ${tabla(["#Orden", "Materia", "Símbolo", "#Asesores", "#Archivos", "#Cursos", ""], lista.map(m => `
+    ${tabla(["#Orden", "Materia", "Área", "Símbolo", "#Asesores", "#Archivos", "#Cursos", ""], lista.map(m => `
       <tr data-materia="${m.id}"><td class="num">${m.orden}</td><td><a href="materia.html?m=${encodeURIComponent(m.slug)}">${escapar(m.nombre)}</a></td>
-        <td class="mono">${escapar(m.simbolo)}</td><td class="num">${m.asesores.length}</td><td class="num">${m.archivos}</td><td class="num">${m.cursos}</td>
+        <td>${escapar(m.area)}</td><td class="mono">${escapar(m.simbolo)}</td><td class="num">${m.asesores.length}</td><td class="num">${m.archivos}</td><td class="num">${m.cursos}</td>
         <td class="acciones"><button class="btn btn--sm btn--secundario" data-editar>Editar</button>
           <button class="btn btn--sm btn--peligro" data-borrar>Eliminar</button></td></tr>`), "Todavía no hay materias.")}`;
   const dialogo = document.getElementById("dialogoMateria");
   const form = document.getElementById("formMateria");
   let editando = null;
+  document.getElementById("listaAreas").innerHTML = porArea(lista).map(([area]) => `<option value="${escapar(area)}">`).join("");
   const abrir = m => {
     editando = m;
     document.getElementById("tituloDialogoMateria").textContent = m ? `Editar ${m.nombre}` : "Nueva materia";
     form.querySelector("#mNombre").value = m?.nombre || "";
     form.querySelector("#mSimbolo").value = m?.simbolo || "";
     form.querySelector("#mOrden").value = m?.orden ?? lista.length + 1;
+    form.querySelector("#mArea").value = m?.area || "";
     form.querySelector("#mDescripcion").value = m?.descripcion || "";
     form.querySelector("#mAsesores").value = (m?.asesores || []).join("\n");
     form.querySelector(".form__mensaje").textContent = "";
@@ -126,7 +128,8 @@ async function materias() {
   form.onsubmit = async e => {
     e.preventDefault();
     const datos = { id: editando?.id, nombre: form.querySelector("#mNombre").value.trim(), simbolo: form.querySelector("#mSimbolo").value.trim(),
-      orden: Number(form.querySelector("#mOrden").value), descripcion: form.querySelector("#mDescripcion").value.trim(),
+      orden: Number(form.querySelector("#mOrden").value), area: form.querySelector("#mArea").value.trim(),
+      descripcion: form.querySelector("#mDescripcion").value.trim(),
       asesores: form.querySelector("#mAsesores").value.split("\n").map(s => s.trim()).filter(Boolean) };
     try { await API.post("materias.php", datos, { accion: editando ? "editar" : "crear" }); dialogo.close(); avisar("Materia guardada."); materias(); }
     catch (err) { form.querySelector(".form__mensaje").textContent = err.message; }
@@ -149,7 +152,7 @@ async function materias() {
 /* ───────── Contenido ───────── */
 async function contenido() {
   const d = await API.get("admin.php", { seccion: "contenido", ...filtros });
-  const secciones = [["apuntes", "Apuntes"], ["tareas", "Tareas"], ["examenes", "Exámenes"], ["apoyo", "Apoyo"], ["curso", "Curso"], ["entrega", "Entrega"]];
+  const secciones = [["apuntes", "Apuntes"], ["tareas", "Tareas"], ["examenes", "Exámenes"], ["apoyo", "Apoyo"], ["curso", "Curso"], ["entrega", "Entrega"], ["guia", "Guía de examen"]];
   panel.innerHTML = `
     <form class="form__fila" data-filtros>${campoFiltro("q", "Buscar título")}${campoFiltro("seccion_archivo", "Sección", secciones)}
       ${campoFiltro("estado", "Estado", Object.entries(ESTADOS_ARCHIVO).map(([k, v]) => [k, v.texto]))}
@@ -234,6 +237,52 @@ async function examenes() {
           <td class="num">${t.aciertos} / ${t.total}</td><td class="num">${n(t.puntaje)} %</td><td class="num">${t.duracion_seg ? duracion(t.duracion_seg) : "—"}</td></tr>`))}</div>`;
 }
 
+/* ───────── Guías de examen ───────── */
+// Manuales y guías del examen de admisión: api/ia.php toma fragmentos de ellas al generar exámenes en Preparación.
+async function guias() {
+  const d = await API.get("admin.php", { seccion: "guias" });
+  const areas = actual => `<option value="">General (todas las materias)</option>` +
+    d.temario.map(t => `<option ${actual === t ? "selected" : ""}>${escapar(t)}</option>`).join("");
+  panel.innerHTML = `
+    <div class="herramientas"><p class="rotulo">${d.filas.length} ${d.filas.length === 1 ? "guía" : "guías"} · se usan al generar exámenes en Preparación</p>
+      <button class="btn btn--secundario" type="button" data-subir-guia>${icono("subir", "icono--16")} Subir guía</button></div>
+    <p class="texto-2">Sube manuales o guías para el examen de admisión al nivel superior. Al generar un examen de una materia se usan sus guías
+      y las generales; el simulacro usa todas. Si una guía es un escaneo sin texto, la IA no puede leerla.</p>
+    ${tabla(["Guía", "Materia del examen", "Tipo", "#Tamaño", "#Texto leído", "Estado", "Subida", ""], d.filas.map(g => `
+      <tr data-archivo="${g.id}"><td><a href="ver.html?id=${g.id}">${escapar(g.titulo)}</a><br><small class="texto-3 mono">${escapar(g.nombre_original)}</small></td>
+        <td><select class="input" data-area aria-label="Materia del examen de ${escapar(g.titulo)}">${areas(g.area_examen)}</select></td>
+        <td>${(TIPOS_ARCHIVO[g.tipo] || TIPOS_ARCHIVO.otro).nombre}</td><td class="num">${tamano(g.bytes)}</td>
+        <td class="num">${g.estado !== "listo" ? "—" : g.caracteres ? `${n(g.caracteres).toLocaleString("es-MX")} caracteres`
+          : '<span class="chip chip--aviso" title="No se encontró texto; puede ser un escaneo">Sin texto</span>'}</td>
+        <td><span class="chip ${ESTADOS_ARCHIVO[g.estado].clase}" title="${escapar(g.error || "")}">${ESTADOS_ARCHIVO[g.estado].texto}</span></td>
+        <td class="mono">${fecha(g.creado, true)}</td>
+        <td class="acciones"><button class="btn btn--sm btn--secundario" data-reprocesar>Reprocesar</button>
+          <button class="btn btn--sm btn--peligro" data-borrar>Eliminar</button></td></tr>`), "Todavía no hay guías. Súbelas con «Subir guía».")}`;
+  const recargar = () => actual === "guias" && mostrar("guias");
+  Archivos.vigilar(d.filas, recargar);
+  panel.addEventListener("change", async e => {
+    const sel = e.target.closest("[data-area]");
+    if (!sel) return;
+    try { await API.post("admin.php", { id: Number(sel.closest("tr").dataset.archivo), area: sel.value }, { accion: "guia_area" }); avisar("Materia de la guía actualizada."); }
+    catch (err) { avisar(err.message, "error"); recargar(); }
+  });
+  panel.addEventListener("click", async e => {
+    if (e.target.closest("[data-subir-guia]")) return Archivos.abrir({
+      seccion: "guia", rotulo: "Panel · Guías de examen", titulo: "Subir guía de examen", alTerminar: recargar,
+      acepta: ".pdf,.doc,.docx,.odt,.rtf,.ppt,.pptx,.odp,.xls,.xlsx,.ods,.csv,.txt,.md", ayudaArchivo: "PDF, Word, PowerPoint, Excel o texto.",
+      extras: [{ campo: "area_examen", etiqueta: "Materia del examen", vacio: "General (todas las materias)", opciones: d.temario.map(t => [t, t]),
+        ayuda: "Las guías generales se usan en todos los exámenes." }]
+    });
+    const fila = e.target.closest("tr[data-archivo]");
+    if (!fila) return;
+    const id = Number(fila.dataset.archivo);
+    try {
+      if (e.target.closest("[data-reprocesar]")) { await API.post("archivos.php", { id }, { accion: "reprocesar" }); avisar("Guía en cola otra vez."); recargar(); }
+      if (e.target.closest("[data-borrar]") && confirm("¿Eliminar la guía? Dejará de usarse al generar exámenes.")) { await API.post("archivos.php", { id }, { accion: "borrar" }); avisar("Guía eliminada."); recargar(); }
+    } catch (err) { avisar(err.message, "error"); }
+  });
+}
+
 /* ───────── Analítica ───────── */
 async function analitica() {
   const d = await API.get("admin.php", { seccion: "analitica", dias: filtros.dias || 30 });
@@ -266,7 +315,7 @@ async function logs() {
 }
 
 /* ───────── Navegación del panel ───────── */
-const VISTAS = { resumen, usuarios, materias, contenido, postulaciones, cursos, examenes, analitica, logs };
+const VISTAS = { resumen, usuarios, materias, contenido, postulaciones, cursos, examenes, guias, analitica, logs };
 let actual = "resumen";
 
 async function mostrar(id, nuevosFiltros) {
@@ -290,7 +339,7 @@ async function mostrar(id, nuevosFiltros) {
   });
   panel.addEventListener("submit", e => { if (e.target.matches("[data-filtros]")) e.preventDefault(); });
   panel.addEventListener("click", e => {
-    const p = e.target.closest("[data-pagina]");
+    const p = e.target.closest("button[data-pagina]"); // <body data-pagina> también coincidiría
     if (p && !p.disabled) mostrar(actual, { ...filtros, pagina: p.dataset.pagina });
     const ir = e.target.closest("[data-ir]");
     if (ir) { e.preventDefault(); mostrar(ir.dataset.ir, ir.dataset.estado ? { estado: ir.dataset.estado } : {}); }

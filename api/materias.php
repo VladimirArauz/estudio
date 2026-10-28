@@ -19,7 +19,7 @@ function conAsesores(array $materias): array {
     return $materias;
 }
 
-const SQL_MATERIAS = 'SELECT m.id, m.slug, m.nombre, m.simbolo, m.color, m.descripcion, m.orden,
+const SQL_MATERIAS = 'SELECT m.id, m.slug, m.nombre, m.simbolo, m.color, m.descripcion, m.area, m.orden,
     (SELECT COUNT(*) FROM archivos a WHERE a.materia_id = m.id AND a.seccion IN ("apoyo","apuntes","tareas","examenes")) archivos,
     (SELECT COUNT(*) FROM cursos c WHERE c.materia_id = m.id AND c.estado = "activo") cursos
     FROM materias m';
@@ -59,8 +59,9 @@ switch (accion()) {
         $slug = $base;
         for ($i = 2; valor('SELECT 1 FROM materias WHERE slug = ?', [$slug]); $i++) $slug = "$base-$i";
         $orden = (int)valor('SELECT COALESCE(MAX(orden), 0) + 1 FROM materias');
-        ejecutar('INSERT INTO materias (slug, nombre, simbolo, descripcion, orden) VALUES (?, ?, ?, ?, ?)',
-            [$slug, $nombre, texto($d, 'simbolo', 12) ?? mb_strtoupper(mb_substr($nombre, 0, 3)), texto($d, 'descripcion', 2000), $orden]);
+        ejecutar('INSERT INTO materias (slug, nombre, simbolo, descripcion, area, orden) VALUES (?, ?, ?, ?, ?, ?)',
+            [$slug, $nombre, texto($d, 'simbolo', 12) ?? mb_strtoupper(mb_substr($nombre, 0, 3)), texto($d, 'descripcion', 2000),
+             texto($d, 'area', 60) ?? 'Tronco común', $orden]);
         $id = (int)db()->lastInsertId();
         guardarAsesores($id, $d['asesores'] ?? null);
         registrar('materia_crear', 'materia', $id, ['nombre' => $nombre]);
@@ -68,8 +69,9 @@ switch (accion()) {
 
     case 'editar':
         $id = entero($d['id'] ?? null) ?? fallar('Falta la materia.', 422);
-        ejecutar('UPDATE materias SET nombre = ?, simbolo = ?, descripcion = ?, orden = ? WHERE id = ?', [
-            texto($d, 'nombre', 120, true), texto($d, 'simbolo', 12) ?? '', texto($d, 'descripcion', 2000), (int)($d['orden'] ?? 0), $id,
+        ejecutar('UPDATE materias SET nombre = ?, simbolo = ?, descripcion = ?, area = ?, orden = ? WHERE id = ?', [
+            texto($d, 'nombre', 120, true), texto($d, 'simbolo', 12) ?? '', texto($d, 'descripcion', 2000),
+            texto($d, 'area', 60) ?? 'Tronco común', (int)($d['orden'] ?? 0), $id,
         ]);
         guardarAsesores($id, $d['asesores'] ?? null);
         registrar('materia_editar', 'materia', $id);

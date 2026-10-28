@@ -45,6 +45,23 @@ function imagenMateria(materia) {
   return `<span class="pieza__simbolo" aria-hidden="true">${escapar(materia.simbolo || materia.nombre.slice(0, 3))}</span>`;
 }
 
+// Materias agrupadas por área (Tronco común, Técnico en …), en el orden en que llegan.
+function porArea(materias) {
+  const grupos = new Map();
+  materias.forEach(m => {
+    const area = m.area || "Tronco común";
+    if (!grupos.has(area)) grupos.set(area, []);
+    grupos.get(area).push(m);
+  });
+  return [...grupos];
+}
+
+// <option>s de materias en un <optgroup> por área.
+function opcionesMaterias(materias) {
+  return porArea(materias).map(([area, lista]) => `<optgroup label="${escapar(area)}">${lista.map(m =>
+    `<option value="${m.id}">${escapar(m.nombre)}</option>`).join("")}</optgroup>`).join("");
+}
+
 // Calificación de 1 a 5 como estrellas.
 function estrellas(valor) {
   const n = Math.round(Number(valor) || 0);

@@ -4,6 +4,7 @@ from __future__ import annotations
 import html
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -42,6 +43,14 @@ def esc(texto) -> str:
 
 def sanear(fragmento: str) -> str:
     return bleach.clean(fragmento, tags=ETIQUETAS, attributes=ATRIBUTOS, protocols=["http", "https", "mailto"], strip=True)
+
+
+def texto_plano(fragmento: str) -> str:
+    """Texto sin etiquetas, un bloque por línea (lo que lee la IA de las guías de examen)."""
+    con_saltos = re.sub(r"(?i)<br\s*/?>|</(?:p|div|li|h[2-4]|tr|section|article|pre|blockquote|figcaption)>", "\n", fragmento)
+    texto = html.unescape(bleach.clean(con_saltos, tags=set(), strip=True))
+    lineas = (re.sub(r"[ \t\u00a0]+", " ", linea).strip() for linea in texto.splitlines())
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lineas)).strip()
 
 
 @dataclass

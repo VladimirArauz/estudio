@@ -33,6 +33,17 @@ const TIPOS_PERMITIDOS = [
 
 const SECCIONES_PUBLICAS = ['apuntes', 'tareas', 'examenes', 'apoyo'];
 
+// Materias del examen de admisión al nivel superior (el generador de Preparación y las guías usan las mismas).
+const TEMARIO_EXAMEN = ['Matemáticas', 'Física', 'Química', 'Biología', 'Historia', 'Comunicación', 'Inglés'];
+// Las guías de examen solo sirven si se les puede sacar texto.
+const TIPOS_GUIA = ['pdf', 'documento', 'presentacion', 'hoja', 'texto'];
+
+// Texto extraído de una guía (lo escribe procesador/worker.py); '' si aún no se procesa.
+function textoGuia(array $a): string {
+    $ruta = dirGenerado($a) . '/texto.txt';
+    return is_file($ruta) ? (string)file_get_contents($ruta) : '';
+}
+
 function rutaOriginal(array $a): string {
     global $CONFIG;
     return $CONFIG['subidas']['dir'] . '/originales/' . $a['uuid'] . ($a['extension'] ? '.' . $a['extension'] : '');

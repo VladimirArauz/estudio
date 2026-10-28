@@ -46,7 +46,8 @@ async function generarExamen() {
   document.getElementById("tituloExamen").textContent = titulo;
   document.getElementById("origen").textContent = r.origen === "ia" ? (r.cache ? "IA · desde caché" : "Generado con IA") : "Banco local";
   document.getElementById("avisoOrigen").innerHTML = r.aviso
-    ? `<p class="nota nota--aviso"><span class="rotulo">Sin IA</span><span>${escapar(r.aviso)}</span></p>` : "";
+    ? `<p class="nota nota--aviso"><span class="rotulo">Sin IA</span><span>${escapar(r.aviso)}</span></p>`
+    : r.datos.fuentes?.length ? `<p class="nota"><span class="rotulo">Basado en</span><span>${r.datos.fuentes.map(escapar).join(" · ")}</span></p>` : "";
   document.getElementById("otraVariante").hidden = r.origen !== "ia";
   Examen.pintar(document.getElementById("contenedorExamen"), r.datos, {
     modo, materia: opciones.materia || "General", titulo, alTerminar: cargarDesempeno
@@ -103,7 +104,8 @@ async function cargarDesempeno() {
     estado = await API.get("ia.php", { accion: "estado" });
   } catch { /* sin API: banco local */ }
   const chip = document.getElementById("estadoIa");
-  chip.textContent = estado.ia ? `IA activa · ${estado.modelo}` : "Sin IA · banco local";
+  const guias = Object.values(estado.guias || {}).reduce((a, n) => a + Number(n), 0);
+  chip.textContent = estado.ia ? `IA activa · ${estado.modelo}${guias ? ` · ${guias} ${guias === 1 ? "guía" : "guías"}` : ""}` : "Sin IA · banco local";
   chip.classList.add(estado.ia ? "chip--ok" : "chip--aviso");
   selMateria.innerHTML = estado.temario.map(m => `<option>${escapar(m)}</option>`).join("");
   const materiaUrl = parametro("materia");

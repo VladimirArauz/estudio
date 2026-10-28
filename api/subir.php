@@ -31,6 +31,7 @@ $seccion = $d['seccion'] ?? '';
 $materia = entero($d['materia_id'] ?? null);
 $curso = entero($d['curso_id'] ?? null);
 $actividad = entero($d['actividad_id'] ?? null);
+$areaExamen = null;
 
 switch ($seccion) {
     case 'apuntes': case 'tareas': case 'examenes': case 'apoyo':
@@ -49,6 +50,15 @@ switch ($seccion) {
         if (!estaInscrito($curso)) fallar('Solo los alumnos inscritos pueden entregar esta actividad.', 403);
         $materia = (int)valor('SELECT materia_id FROM cursos WHERE id = ?', [$curso]);
         break;
+    case 'guia':
+        // Manuales y guías para el examen de admisión: los usa api/ia.php al generar exámenes.
+        if ($u['rol'] !== 'admin') fallar('Solo la administración puede subir guías de examen.', 403);
+        if (!in_array($tipo, TIPOS_GUIA, true)) fallar('Las guías deben ser PDF, Word, PowerPoint, Excel o texto para poder leerlas.', 415);
+        $areaExamen = $d['area_examen'] ?? '';
+        if ($areaExamen === '') $areaExamen = null;
+        elseif (!in_array($areaExamen, TEMARIO_EXAMEN, true)) fallar('Materia del examen no válida.', 422);
+        $materia = $curso = $actividad = null;
+        break;
     default:
         fallar('Sección no válida.', 422);
 }
@@ -60,9 +70,9 @@ if (!move_uploaded_file($f['tmp_name'], $destino)) fallar('No se pudo guardar el
 chmod($destino, 0664);
 
 $titulo = texto($d, 'titulo', 200) ?? pathinfo($nombre, PATHINFO_FILENAME);
-ejecutar('INSERT INTO archivos (uuid, seccion, materia_id, curso_id, actividad_id, autor_id, titulo, nombre_original, extension, mime, tipo, bytes)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [$uuid, $seccion, $materia, $curso, $actividad, $u['id'], $titulo, $nombre, $ext, $mime, $tipo, $f['size']]);
+ejecutar('INSERT INTO archivos (uuid, seccion, materia_id, curso_id, actividad_id, area_examen, autor_id, titulo, nombre_original, extension, mime, tipo, bytes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [$uuid, $seccion, $materia, $curso, $actividad, $areaExamen, $u['id'], $titulo, $nombre, $ext, $mime, $tipo, $f['size']]);
 $id = (int)db()->lastInsertId();
 
 // Una entrega por alumno y actividad: se reemplaza el archivo anterior.

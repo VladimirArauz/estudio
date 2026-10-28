@@ -32,11 +32,14 @@ async function cargarMaterias() {
     return;
   }
   tarjetas.innerHTML = "";
-  materias.forEach((m, i) => agregarMateria(m, i + 1));
+  let n = 0;
+  porArea(materias).forEach(([area, lista]) => {
+    tarjetas.insertAdjacentHTML("beforeend", `<h3 class="rotulo" style="grid-column: 1 / -1; margin-top: var(--e-4)">${escapar(area)} · ${lista.length}</h3>`);
+    lista.forEach(m => agregarMateria(m, ++n));
+  });
   if (!materias.length) tarjetas.innerHTML = `<div class="vacio"><p>Todavía no hay materias.</p></div>`;
   document.getElementById("cotaApoyo").innerHTML = cota(materias.length, materias.length === 1 ? "materia" : "materias");
-  filtroMateria.innerHTML = `<option value="">Todas las materias</option>` +
-    materias.map(m => `<option value="${m.id}">${escapar(m.nombre)}</option>`).join("");
+  filtroMateria.innerHTML = `<option value="">Todas las materias</option>` + opcionesMaterias(materias);
   Animar.registrar();
 }
 

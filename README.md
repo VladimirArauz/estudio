@@ -63,6 +63,14 @@ Cada consulta tarda ~150 ms de ida y vuelta. Por eso la API usa conexión persis
 
 Sin key, Preparación usa el banco local de preguntas (`scripts/banco.js`).
 
+### Guías para el examen de admisión
+
+En *Panel de control → Guías de examen* el admin sube manuales o guías (PDF, Word, PowerPoint, Excel o texto) y les asigna una materia del examen (o «General»). El worker guarda el texto de cada guía en `storage/generados/{uuid}/texto.txt`, y `api/ia.php` mete en el prompt los fragmentos que más se relacionan con la materia y el tema pedidos (hasta ~24 000 caracteres). El simulacro usa todas las guías. Las páginas escaneadas sin texto no se pueden leer (no hay OCR).
+
+## Materias
+
+`sql/003_materias_cecyt9.sql` carga las materias de los mapas curriculares oficiales del CECyT 9 (tronco común y las carreras de Técnico en Programación, Mecatrónica, Sistemas Digitales y Desarrollo de Software), agrupadas por `area`. Las seriadas (Física I–IV, Inglés I–VI…) van juntas en una sola materia.
+
 > La key que estaba en el repo público `ECO_Preparaci-n` (archivo `.env`) quedó expuesta: revócala en AI Studio y no la reutilices.
 
 ## Roles

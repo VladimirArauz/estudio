@@ -1,6 +1,7 @@
 <?php
 // Panel de administración: todo lo que pasa en la plataforma, resumido por secciones.
 require_once __DIR__ . '/_comun.php';
+require_once __DIR__ . '/_archivos.php';
 
 $yo = requiereRol('admin');
 const POR_PAGINA = 50;
@@ -64,6 +65,15 @@ if (metodo() === 'GET') {
                     u.nombre autor, m.nombre materia, (SELECT COUNT(*) FROM visitas v WHERE v.ruta = CONCAT('ver.html?id=', a.id)) visitas
                  FROM archivos a LEFT JOIN usuarios u ON u.id = a.autor_id LEFT JOIN materias m ON m.id = a.materia_id
                  WHERE $w ORDER BY a.id DESC", $p));
+
+        case 'guias':
+            $filas = todos('SELECT a.id, a.uuid, a.titulo, a.nombre_original, a.tipo, a.bytes, a.estado, a.error, a.area_examen, a.creado, u.nombre autor
+                FROM archivos a LEFT JOIN usuarios u ON u.id = a.autor_id WHERE a.seccion = "guia" ORDER BY COALESCE(a.area_examen, ""), a.id DESC');
+            foreach ($filas as &$g) {
+                $g['caracteres'] = mb_strlen(textoGuia($g));
+                unset($g['uuid']);
+            }
+            responder(['filas' => $filas, 'temario' => TEMARIO_EXAMEN]);
 
         case 'postulaciones':
             responder(['filas' => todos('SELECT p.id, p.mensaje, p.estado, p.creado, p.revisado, u.nombre, u.email, m.nombre materia, r.nombre revisor
@@ -158,6 +168,13 @@ switch (accion()) {
         // Al aprobar, la persona pasa a ser profesor si todavía era alumno.
         if ($estado === 'aprobada') ejecutar('UPDATE usuarios SET rol = "profesor" WHERE id = ? AND rol = "alumno"', [$post['usuario_id']]);
         registrar('admin_postulacion', 'postulacion', $id, ['estado' => $estado]);
+        responder(['ok' => true]);
+
+    case 'guia_area':
+        $area = ($d['area'] ?? '') === '' ? null : $d['area'];
+        if ($area !== null && !in_array($area, TEMARIO_EXAMEN, true)) fallar('Materia del examen no válida.', 422);
+        ejecutar('UPDATE archivos SET area_examen = ? WHERE id = ? AND seccion = "guia"', [$area, $id]);
+        registrar('guia_area', 'archivo', $id, ['area' => $area]);
         responder(['ok' => true]);
 
     case 'curso_estado':

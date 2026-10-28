@@ -17,7 +17,7 @@
     <header class="cabecera-pagina">
       <p class="rotulo">Administración · Solo admin</p>
       <h1 class="cabecera-pagina__titulo">Panel de control</h1>
-      <div class="cota" aria-hidden="true"><span class="cota__linea"></span><span class="cota__medida">9 secciones</span></div>
+      <div class="cota" aria-hidden="true"><span class="cota__linea"></span><span class="cota__medida">10 secciones</span></div>
     </header>
     <div class="pila" style="gap: var(--e-6)">
       <div class="pestanas" role="tablist" aria-label="Secciones del panel" id="pestanasPanel"></div>
@@ -34,6 +34,8 @@
         <div class="campo"><label for="mSimbolo">Símbolo</label><input id="mSimbolo" maxlength="12"></div>
         <div class="campo"><label for="mOrden">Orden</label><input id="mOrden" type="number" value="0"></div>
       </div>
+      <div class="campo"><label for="mArea">Área o carrera</label><input id="mArea" maxlength="60" list="listaAreas" placeholder="Tronco común">
+        <datalist id="listaAreas"></datalist></div>
       <div class="campo"><label for="mDescripcion">Descripción</label><textarea id="mDescripcion" maxlength="2000"></textarea></div>
       <div class="campo"><label for="mAsesores">Asesores (uno por línea)</label><textarea id="mAsesores"></textarea></div>
       <p class="form__mensaje form__mensaje--error" role="alert"></p>
@@ -48,6 +50,7 @@
   <script src="scripts/api.js"></script>
   <script src="scripts/nav.js"></script>
   <script src="scripts/analitica.js"></script>
+  <script src="scripts/subir.js"></script>
   <script src="scripts/panel.js"></script>
 </body>
 </html>
