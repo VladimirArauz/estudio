@@ -30,5 +30,5 @@ RewriteRule ^(bin|config|src|sql|procesador|storage|tests|docs)(/|$) - [F]
   Header always set Strict-Transport-Security "max-age=31536000" "expr=%{HTTPS} == 'on' && %{HTTP_HOST} !~ /^(localhost|127\.|\[::1\]|\d+\.\d+\.\d+\.\d+)/"
   # Sin scripts en línea: todo el JS vive en scripts/. Los estilos en línea (style="") sí se usan.
   # api/archivo.php manda su propia CSP más estricta para los archivos que sirve.
-  Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests" "expr=%{REQUEST_URI} !~ m#/api/archivo\.php#"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests" "expr=%{REQUEST_URI} !~ m#/api/archivo\.php#"
 </IfModule>

@@ -1,0 +1,22 @@
+# Escaneo OWASP ZAP (araña + pasivo + activo) contra el ENTORNO DE PRUEBAS. Uso: zap.sh -cmd -autorun tests/seguridad/zap.yaml
+env:
+  contexts:
+    - name: estudio-pruebas
+      urls: ["https://localhost:8443/estudio/"]
+      includePaths: ["https://localhost:8443/estudio/.*"]
+  parameters:
+    failOnError: true
+    progressToStdout: true
+jobs:
+  - type: spider
+    parameters: {context: estudio-pruebas, maxDuration: 2, maxDepth: 6}
+  - type: spider
+    parameters: {context: estudio-pruebas, url: "https://localhost:8443/estudio/api/materias.php", maxDuration: 1}
+  - type: passiveScan-wait
+    parameters: {maxDuration: 5}
+  - type: activeScan
+    parameters: {context: estudio-pruebas, maxScanDurationInMins: 12, maxRuleDurationInMins: 2}
+  - type: report
+    parameters: {template: traditional-json, reportDir: tests/reportes, reportFile: zap-estudio.json}
+  - type: report
+    parameters: {template: traditional-html, reportDir: tests/reportes, reportFile: zap-estudio.html}

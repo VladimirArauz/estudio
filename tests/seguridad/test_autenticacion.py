@@ -125,7 +125,8 @@ def test_activar_2fa_y_entrar_con_codigo(nuevo_usuario):
     assert c.entrar(u).ok
     ini = c.post("api/auth.php", {}, "totp_iniciar").json()
     assert ini["uri"].startswith("otpauth://totp/") and len(ini["secreto"]) == 32
-    act = c.post("api/auth.php", {"codigo": totp(ini["secreto"])}, "totp_activar")
+    codigo_activacion = totp(ini["secreto"])
+    act = c.post("api/auth.php", {"codigo": codigo_activacion}, "totp_activar")
     assert act.ok, act.text
     recuperacion = act.json()["recuperacion"]
     assert len(recuperacion) == 10
@@ -138,7 +139,7 @@ def test_activar_2fa_y_entrar_con_codigo(nuevo_usuario):
     r = d.post("api/auth.php", {"email": u["email"], "password": u["password"]}, "entrar")
     assert r.json()["paso"] == "2fa" and d.yo()["usuario"] is None
     # El mismo código que ya se usó al activar no vale otra vez.
-    assert d.post("api/auth.php", {"codigo": totp(ini["secreto"])}, "verificar_2fa").status_code == 401
+    assert d.post("api/auth.php", {"codigo": codigo_activacion}, "verificar_2fa").status_code == 401
     # Un código de recuperación sí, y solo una vez.
     assert d.post("api/auth.php", {"codigo": recuperacion[0]}, "verificar_2fa").ok
     assert d.yo()["usuario"]["email"] == u["email"]

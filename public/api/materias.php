@@ -37,10 +37,13 @@ exigirPost();
 requiereRol('admin');
 $d = entrada();
 
+const SLUG_MAX = 60; // largo de materias.slug
+
 function slug(string $texto): string {
     $s = iconv('UTF-8', 'ASCII//TRANSLIT', $texto);
     $s = strtolower(trim(preg_replace('/[^A-Za-z0-9]+/', '-', $s), '-'));
-    return $s ?: 'materia';
+    // Deja lugar para el sufijo «-N» que se agrega si el slug ya existe.
+    return rtrim(substr($s, 0, SLUG_MAX - 4), '-') ?: 'materia';
 }
 
 function guardarAsesores(int $id, $lista): void {

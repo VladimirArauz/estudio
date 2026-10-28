@@ -7,6 +7,8 @@
 require_once dirname(__DIR__, 2) . '/src/comun.php';
 require_once dirname(__DIR__, 2) . '/src/archivos.php';
 session_write_close(); // no bloquear otras peticiones mientras se transmite
+// CSP propia (el .htaccess no manda la general aquí), también en las respuestas de error.
+header("Content-Security-Policy: default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox");
 
 $a = uno(SQL_ARCHIVO . ' WHERE a.id = ?', [entero($_GET['id'] ?? null) ?? 0]);
 if (!$a || !puedeVer($a)) fallar('Archivo no encontrado.', 404);
@@ -50,7 +52,6 @@ header_remove('Cache-Control');
 header('Cache-Control: private, max-age=3600');
 header('Accept-Ranges: bytes');
 header('Content-Type: ' . $tipo);
-header("Content-Security-Policy: default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox");
 $nombreSeguro = preg_replace('/[^\w.\- ]+/u', '_', $nombre);
 header(sprintf('Content-Disposition: %s; filename="%s"; filename*=UTF-8\'\'%s',
     $enLinea ? 'inline' : 'attachment', $nombreSeguro, rawurlencode($nombre)));
