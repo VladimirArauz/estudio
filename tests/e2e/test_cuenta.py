@@ -7,7 +7,7 @@ import time
 from playwright.sync_api import expect
 
 from ayuda import CONTRASENA, totp
-from e2e.conftest import entrar_ui, ir
+from e2e.conftest import entrar_ui, escribir_codigo, ir
 
 
 def test_registro_valida_y_crea_cuenta(pagina):
@@ -77,8 +77,7 @@ def test_admin_activa_2fa_desde_mi_cuenta(pagina, nuevo_usuario):
     pagina.click("#dosPasos [data-iniciar]")
     expect(pagina.locator("#dosPasos svg")).to_be_visible()  # código QR
     secreto = pagina.locator("#dosPasos code").inner_text().replace(" ", "")
-    pagina.fill("#codigoActivar", totp(secreto))
-    pagina.click("#dosPasos [data-activar] [type=submit]")
+    escribir_codigo(pagina, "#codigoActivar", totp(secreto))
     expect(pagina.locator("#dosPasos")).to_contain_text("Guarda estos códigos")
     assert pagina.locator("#dosPasos ul li").count() == 10
     pagina.click("#dosPasos [data-listo]")

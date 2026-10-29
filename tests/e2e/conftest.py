@@ -84,10 +84,14 @@ def entrar_ui(page: Page, usuario: dict, codigo: str | None = None, volver: str 
     page.click("#formEntrar [type=submit]")
     if usuario.get("secreto"):
         expect(page.locator("#formCodigo")).to_be_visible()
-        page.fill("#codigoEntrar", codigo or totp(usuario["secreto"]))
-        page.click("#formCodigo [type=submit]")
+        escribir_codigo(page, "#codigoEntrar", codigo or totp(usuario["secreto"]))
     page.wait_for_url(re.compile(r".*/(index|" + re.escape((volver or "index.html").split(".")[0]) + r")\.html.*"))
     page.wait_for_load_state("load")
+
+
+def escribir_codigo(page: Page, selector: str, codigo: str):
+    """Escribe en el input OTP (una casilla por dígito; se envía solo al completar)."""
+    page.locator(f"{selector} .otp__casilla").first.fill(codigo)
 
 
 def confirmar_identidad(page: Page, usuario: dict, codigo: str | None = None):

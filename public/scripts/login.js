@@ -58,23 +58,21 @@ function pedirCodigo() {
   document.querySelector('[role="tablist"]').hidden = true;
   document.getElementById("tituloAcceso").textContent = "Verificación en dos pasos";
   formCodigo.hidden = false;
-  document.getElementById("codigoEntrar").focus();
+  OTP.montar(document.getElementById("cajaCodigo"), {
+    id: "codigoEntrar", etiqueta: "Código de verificación", alternativo: true,
+    alCompletar: async codigo => {
+      try {
+        await API.post("auth.php", { codigo }, { accion: "verificar_2fa" });
+      } catch (err) {
+        if (err.status === 401 && /5 minutos|contraseña/.test(err.message)) setTimeout(() => location.reload(), 2500);
+        return err.message;
+      }
+      API.olvidarToken();
+      setTimeout(irDestino, 600); // deja ver el estado «Verificado»
+      return true;
+    }
+  }).enfocar();
 }
-formCodigo.addEventListener("submit", async e => {
-  e.preventDefault();
-  const error = formCodigo.querySelector(".form__mensaje");
-  const boton = formCodigo.querySelector('[type="submit"]');
-  boton.disabled = true;
-  try {
-    await API.post("auth.php", { codigo: document.getElementById("codigoEntrar").value.trim() }, { accion: "verificar_2fa" });
-    API.olvidarToken();
-    irDestino();
-  } catch (err) {
-    error.textContent = err.message;
-    boton.disabled = false;
-    if (err.status === 401 && /5 minutos|contraseña/.test(err.message)) setTimeout(() => location.reload(), 2500);
-  }
-});
 
 const esCorreo = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const PASSWORD_MIN = 10;
@@ -145,27 +143,27 @@ function pintarDosPasos(yo) {
         <li>Abre tu app de autenticación y escanea este código:
           <div style="background: #fff; padding: 12px; width: max-content; margin-top: var(--e-3)" aria-label="Código QR para la app de autenticación">${qr.createSvgTag({ cellSize: 5, margin: 0, scalable: false })}</div>
           <p class="texto-2">¿No puedes escanearlo? Escribe esta clave en la app: <code class="mono" style="word-break: break-all">${escapar(r.secreto.replace(/(.{4})/g, "$1 ").trim())}</code></p></li>
-        <li><form class="form" novalidate data-activar>
-          <div class="campo"><label for="codigoActivar">Escribe el código de 6 dígitos que muestra la app</label>
-            <input id="codigoActivar" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></div>
-          <p class="form__mensaje form__mensaje--error" role="alert"></p>
-          <div class="form__acciones" style="justify-content: flex-start"><button class="btn btn--primario" type="submit">Activar</button></div>
-        </form></li>
+        <li><div data-activar></div></li>
       </ol>`;
-    caja.querySelector("[data-activar]").addEventListener("submit", async e => {
-      e.preventDefault();
-      try {
-        const a = await API.post("auth.php", { codigo: caja.querySelector("#codigoActivar").value.trim() }, { accion: "totp_activar" });
-        caja.innerHTML = `<p class="nota nota--ok"><span class="rotulo">Activa</span><span>Listo: la verificación en dos pasos quedó activada.</span></p>
-          <p><b>Guarda estos códigos de recuperación</b> en un lugar seguro. Sirven para entrar si pierdes tu teléfono; cada uno funciona una sola vez
-            y no los volveremos a mostrar.</p>
-          <ul class="mono" style="columns: 2">${a.recuperacion.map(c => `<li>${escapar(c)}</li>`).join("")}</ul>
-          <div class="form__acciones" style="justify-content: flex-start"><button class="btn btn--secundario" type="button" data-listo>Ya los guardé</button></div>`;
-        caja.querySelector("[data-listo]").addEventListener("click", async () => pintarDosPasos(await Sesion.yo(true)));
-      } catch (err) { e.target.querySelector(".form__mensaje").textContent = err.message; }
-    });
-    caja.querySelector("#codigoActivar").focus();
+    OTP.montar(caja.querySelector("[data-activar]"), {
+      id: "codigoActivar", etiqueta: "Escribe el código de 6 dígitos que muestra la app",
+      alCompletar: async codigo => {
+        let a;
+        try { a = await API.post("auth.php", { codigo }, { accion: "totp_activar" }); } catch (err) { return err.message; }
+        setTimeout(() => mostrarRecuperacion(caja, a.recuperacion), 600);
+        return true;
+      }
+    }).enfocar();
   });
+}
+
+function mostrarRecuperacion(caja, codigos) {
+  caja.innerHTML = `<p class="nota nota--ok"><span class="rotulo">Activa</span><span>Listo: la verificación en dos pasos quedó activada.</span></p>
+    <p><b>Guarda estos códigos de recuperación</b> en un lugar seguro. Sirven para entrar si pierdes tu teléfono; cada uno funciona una sola vez
+      y no los volveremos a mostrar.</p>
+    <ul class="mono" style="columns: 2">${codigos.map(c => `<li>${escapar(c)}</li>`).join("")}</ul>
+    <div class="form__acciones" style="justify-content: flex-start"><button class="btn btn--secundario" type="button" data-listo>Ya los guardé</button></div>`;
+  caja.querySelector("[data-listo]").addEventListener("click", async () => pintarDosPasos(await Sesion.yo(true)));
 }
 
 formRegistro.addEventListener("submit", e => {

@@ -55,18 +55,11 @@
           </div>
         </form>
 
-        <form class="form" id="formCodigo" novalidate hidden>
-          <p class="texto-2">Tu cuenta tiene verificación en dos pasos. Abre tu app de autenticación y escribe el código de 6 dígitos
+        <div class="form" id="formCodigo" hidden>
+          <p class="texto-2" id="textoCodigo">Tu cuenta tiene verificación en dos pasos. Abre tu app de autenticación y escribe el código de 6 dígitos
             (o uno de tus códigos de recuperación).</p>
-          <div class="campo">
-            <label for="codigoEntrar">Código de verificación</label>
-            <input id="codigoEntrar" inputmode="numeric" autocomplete="one-time-code" maxlength="11" required>
-          </div>
-          <p class="form__mensaje form__mensaje--error" role="alert"></p>
-          <div class="form__acciones" style="justify-content: flex-start">
-            <button class="btn btn--primario" type="submit">Verificar</button>
-          </div>
-        </form>
+          <div id="cajaCodigo"></div>
+        </div>
 
         <form class="form" id="formRegistro" role="tabpanel" aria-labelledby="tabRegistro" novalidate hidden>
           <div class="campo">
@@ -120,6 +113,7 @@
   <script src="scripts/nav.js"></script>
   <script src="scripts/analitica.js"></script>
   <script src="scripts/vendor/qrcode.min.js"></script>
+  <script src="scripts/otp.js"></script>
   <script src="scripts/login.js"></script>
 </body>
 </html>

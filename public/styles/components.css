@@ -337,6 +337,37 @@ button.chip:hover, a.chip:hover { border-color: var(--sec); color: var(--fg); }
 /* Barra de herramientas sobre una rejilla (filtros + acción). */
 .herramientas { display: flex; flex-wrap: wrap; gap: var(--e-3); align-items: center; justify-content: space-between; }
 
+/* Código de un solo uso: una casilla por dígito (scripts/otp.js). */
+.otp { display: flex; flex-direction: column; gap: var(--e-2); align-items: flex-start; }
+.otp__casillas { display: flex; gap: var(--e-2); }
+.otp__casilla {
+  width: min(3rem, calc((100vw - 2rem - 5 * var(--e-2)) / 6)); height: 3.5rem; padding: 0; text-align: center;
+  font: 600 var(--t-lg)/1 var(--f-tecnica); color: var(--fg); caret-color: var(--acento);
+  background: var(--bg); border: 1px solid var(--línea-fuerte); border-radius: var(--radio-s);
+  transition: border-color var(--d-micro), box-shadow var(--d-micro), background var(--d-micro), color var(--d-micro);
+}
+.otp__casilla:focus { outline: none; border-color: var(--acento); box-shadow: 0 0 0 2px color-mix(in srgb, var(--acento) 45%, transparent); }
+.otp__casilla--llena { border-color: var(--fg-2); }
+.otp__casilla--pop { animation: otp-pop var(--d-corta) var(--ease-salida); }
+.otp--ocupado .otp__casilla { opacity: .6; }
+.otp--error .otp__casillas { animation: otp-sacudir 420ms var(--ease-precisa); }
+.otp--error .otp__casilla { border-color: var(--error); color: var(--error); background: color-mix(in srgb, var(--error) 12%, var(--bg)); }
+.otp--ok .otp__casilla {
+  border-color: var(--ok); color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, var(--bg)); opacity: 1;
+  animation: otp-brillo var(--d-media) var(--ease-salida) both; animation-delay: calc(var(--i, 0) * 50ms);
+}
+.otp__estado { min-height: 1.5em; font-size: var(--t-sm); color: var(--fg-3); display: flex; align-items: center; gap: var(--e-1); }
+.otp__estado--error { color: var(--error); }
+.otp__estado--ok { color: var(--ok); font-weight: 500; }
+.otp__alterno .input { width: 14rem; max-width: 100%; }
+.otp__cambiar { padding-inline: 0; min-height: 32px; }
+@keyframes otp-pop { 40% { transform: scale(1.14); } }
+@keyframes otp-sacudir { 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
+@keyframes otp-brillo {
+  50% { transform: translateY(-3px); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ok) 45%, transparent), 0 0 18px color-mix(in srgb, var(--ok) 55%, transparent); }
+  to { box-shadow: 0 0 0 1px color-mix(in srgb, var(--ok) 35%, transparent), 0 0 10px color-mix(in srgb, var(--ok) 30%, transparent); }
+}
+
 /* Cargando */
 .cargando { font: 400 var(--t-xs)/1.4 var(--f-tecnica); letter-spacing: .12em; text-transform: uppercase; color: var(--fg-3); }
 
