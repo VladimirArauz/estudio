@@ -54,8 +54,32 @@
           <p class="form__mensaje form__mensaje--error" role="alert"></p>
           <div class="form__acciones" style="justify-content: flex-start">
             <button class="btn btn--primario" type="submit">Iniciar sesión</button>
+            <button class="btn btn--terciario" type="button" id="olvide">¿Olvidaste tu contraseña?</button>
           </div>
         </form>
+
+        <section class="pila" id="recuperar" hidden>
+          <form class="form" id="formRecuperar" novalidate>
+            <p class="texto-2">Escribe el correo de tu cuenta y te mandamos un código para crear una contraseña nueva.</p>
+            <div class="campo">
+              <label for="emailRecuperar">Correo</label>
+              <input type="email" id="emailRecuperar" autocomplete="email" required>
+            </div>
+            <fieldset class="campo" style="border: 0; padding: 0" id="canalRecuperar" hidden>
+              <legend class="campo__etiqueta">Mandar el código por</legend>
+              <div class="fila">
+                <label class="casilla"><input type="radio" name="canalRecuperar" value="correo" checked> Correo</label>
+                <label class="casilla"><input type="radio" name="canalRecuperar" value="sms"> SMS a mi teléfono verificado</label>
+              </div>
+            </fieldset>
+            <p class="form__mensaje form__mensaje--error" role="alert"></p>
+            <div class="form__acciones" style="justify-content: flex-start">
+              <button class="btn btn--primario" type="submit">Mandar código</button>
+              <button class="btn btn--terciario" type="button" data-volver>Volver a iniciar sesión</button>
+            </div>
+          </form>
+          <div id="cajaRecuperar"></div>
+        </section>
 
         <div class="form" id="formCodigo" hidden>
           <p class="texto-2" id="textoCodigo">Tu cuenta tiene verificación en dos pasos. Abre tu app de autenticación y escribe el código de 6 dígitos

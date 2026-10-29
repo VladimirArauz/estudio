@@ -32,6 +32,16 @@ function responder($datos, int $estado = 200): never {
     exit;
 }
 
+// Manda la respuesta y corta la conexión, pero el script sigue (PHP-FPM): para que el trabajo posterior
+// (p. ej. enviar un correo) no cambie el tiempo de respuesta.
+function terminarRespuesta($datos, int $estado = 200): void {
+    http_response_code($estado);
+    echo json_encode($datos, JSON_UNESCAPED_UNICODE);
+    session_write_close();
+    if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+    else flush();
+}
+
 function fallar(string $mensaje, int $estado = 400): never {
     responder(['error' => $mensaje], $estado);
 }

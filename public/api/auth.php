@@ -25,6 +25,9 @@ switch (accion()) {
             'rol' => rol(),
             'csrf' => $_SESSION['csrf'],
             'pendiente_2fa' => !$u && !empty($_SESSION['pendiente_2fa']),
+            // Segundo paso por correo o SMS: a dónde se mandó el código (para reanudar tras recargar la página).
+            'pendiente' => !$u && !empty($_SESSION['pendiente_2fa']['metodo'])
+                ? ['canal' => $_SESSION['pendiente_2fa']['metodo'], 'destino' => $_SESSION['pendiente_2fa']['destino'], 'reenviar_en' => 0] : null,
         ]);
 
     case 'entrar':
@@ -39,7 +42,7 @@ switch (accion()) {
         limitar('login-correo-ip:' . $email . '|' . ip(), 6, VENTANA_LOGIN, $espera);
         limitar('login-correo:' . $email, 60, VENTANA_LOGIN, $espera);
 
-        $u = uno('SELECT id, password_hash, estado, totp_activo FROM usuarios WHERE email = ?', [$email]);
+        $u = uno('SELECT id, email, password_hash, estado, totp_activo, segundo_factor, telefono, telefono_verificado FROM usuarios WHERE email = ?', [$email]);
         $ok = password_verify($pass, $u['password_hash'] ?? HASH_FICTICIO) && $u;
         ejecutar('INSERT INTO intentos_login (email, ip, exito) VALUES (?, ?, ?)', [$email, ip(), $ok ? 1 : 0]);
         if (!$ok) fallar('El correo o la contraseña no coinciden. Revísalos e intenta de nuevo.', 401);
@@ -52,7 +55,23 @@ switch (accion()) {
             // Contraseña correcta; falta el código. La sesión todavía no tiene usuario.
             session_regenerate_id(true);
             $_SESSION['pendiente_2fa'] = ['id' => (int)$u['id'], 't' => time()];
-            responder(['ok' => true, 'paso' => '2fa', 'csrf' => $_SESSION['csrf']]);
+            responder(['ok' => true, 'paso' => '2fa', 'metodo' => 'totp', 'csrf' => $_SESSION['csrf']]);
+        }
+        if ($u['segundo_factor']) {
+            // Segundo paso por código enviado. Si el SMS no se puede usar (teléfono sin verificar o sin proveedor),
+            // el código va al correo de la cuenta.
+            $sms = $u['segundo_factor'] === 'sms' && $u['telefono'] && $u['telefono_verificado'] && smsDisponible();
+            [$canal, $destino] = $sms ? ['sms', $u['telefono']] : ['correo', $u['email']];
+            session_regenerate_id(true);
+            $_SESSION['pendiente_2fa'] = ['id' => (int)$u['id'], 't' => time(), 'metodo' => $canal, 'destino' => enmascarar($canal, $destino)];
+            // Si entra dos veces seguidas (espera de 60 s), el código anterior sigue sirviendo.
+            $envio = emitirCodigo((int)$u['id'], 'login', $canal, $destino, true);
+            if (!$envio && !valor("SELECT 1 FROM codigos_verificacion WHERE usuario_id = ? AND proposito = 'login' AND usado IS NULL AND expira > NOW()", [$u['id']])) {
+                unset($_SESSION['pendiente_2fa']);
+                fallar('No pudimos enviarte el código. Intenta de nuevo en un momento.', 502);
+            }
+            $envio ??= ['canal' => $canal, 'destino' => enmascarar($canal, $destino), 'reenviar_en' => CODIGO_ESPERA];
+            responder(['ok' => true, 'paso' => '2fa', 'metodo' => $canal, 'csrf' => $_SESSION['csrf']] + $envio);
         }
         iniciarSesion((int)$u['id']);
         registrar('login', 'usuario', (int)$u['id']);
@@ -66,13 +85,16 @@ switch (accion()) {
             fallar('Pasaron más de 5 minutos. Vuelve a escribir tu contraseña.', 401);
         }
         limitar('2fa:' . $p['id'], 6, 300, 'Demasiados códigos incorrectos. Espera 5 minutos.');
-        if (!verificarSegundoFactor($p['id'], (string)(entrada()['codigo'] ?? ''))) {
+        $codigo = (string)(entrada()['codigo'] ?? '');
+        $ok = empty($p['metodo']) ? verificarSegundoFactor($p['id'], $codigo) : verificarCodigo($p['id'], 'login', $codigo) !== null;
+        if (!$ok) {
             ejecutar('INSERT INTO intentos_login (email, ip, exito) VALUES ((SELECT email FROM usuarios WHERE id = ?), ?, 0)', [$p['id'], ip()]);
-            fallar('El código no es correcto o ya se usó. Revisa la app de autenticación.', 401);
+            fallar(empty($p['metodo']) ? 'El código no es correcto o ya se usó. Revisa la app de autenticación.'
+                                       : 'El código no es correcto o ya caducó. Puedes pedir otro.', 401);
         }
         unset($_SESSION['pendiente_2fa']);
         iniciarSesion($p['id']);
-        registrar('login', 'usuario', $p['id'], ['2fa' => true]);
+        registrar('login', 'usuario', $p['id'], ['2fa' => $p['metodo'] ?? 'totp']);
         responder(['ok' => true, 'rol' => rol(), 'csrf' => $_SESSION['csrf']]);
 
     case 'registrar':
@@ -150,7 +172,8 @@ switch (accion()) {
         $paso = totpVerificar($secreto, (string)(entrada()['codigo'] ?? ''));
         if ($paso === null) fallar('El código no coincide. Revisa que la hora de tu teléfono sea automática.', 422);
         $codigos = codigosRecuperacion();
-        ejecutar('UPDATE usuarios SET totp_secreto = ?, totp_activo = 1, totp_ultimo = ?, totp_recuperacion = ? WHERE id = ?', [
+        // La app reemplaza al código por correo o SMS.
+        ejecutar('UPDATE usuarios SET totp_secreto = ?, totp_activo = 1, totp_ultimo = ?, totp_recuperacion = ?, segundo_factor = NULL WHERE id = ?', [
             cifrar($secreto), $paso, json_encode(array_map(fn($c) => hashContrasena($c), $codigos)), $u['id'],
         ]);
         unset($_SESSION['totp_nuevo']);
@@ -221,6 +244,84 @@ switch (accion()) {
         olvidarUsuarioEnSesion();
         registrar($telefono ? 'telefono_guardar' : 'telefono_quitar', 'usuario', $u['id']);
         responder(['ok' => true, 'telefono' => enmascarar('sms', $telefono)]);
+
+    case 'codigo_reenviar_login':
+        // Otro código para el segundo paso (mientras la contraseña siga vigente: 5 min).
+        exigirPost();
+        $p = $_SESSION['pendiente_2fa'] ?? null;
+        if (!$p || empty($p['metodo']) || time() - $p['t'] > 300) fallar('Pasaron más de 5 minutos. Vuelve a escribir tu contraseña.', 401);
+        $f = uno('SELECT email, telefono FROM usuarios WHERE id = ?', [$p['id']]);
+        responder(['ok' => true] + emitirCodigo($p['id'], 'login', $p['metodo'], $p['metodo'] === 'sms' ? $f['telefono'] : $f['email']));
+
+    case 'segundo_factor':
+        // Segundo paso por código al correo o por SMS (alumno y profesor). Los admin usan solo la app (TOTP).
+        exigirPost();
+        $u = requiereRol('admin', 'profesor', 'alumno');
+        $metodo = entrada()['metodo'] ?? null;
+        if (!in_array($metodo, ['correo', 'sms', null], true)) fallar('Método no válido.', 422);
+        if ($metodo !== null && $u['rol'] === 'admin') fallar('Las cuentas de admin usan la app de autenticación.', 403);
+        if ($metodo !== null && $u['totp_activo']) fallar('Ya tienes la app de autenticación activa. Desactívala primero.', 409);
+        if ($metodo === 'correo' && !$u['email_verificado']) fallar('Primero verifica tu correo.', 409);
+        if ($metodo === 'sms' && (!$u['telefono_verificado'] || !smsDisponible())) fallar('Primero agrega y verifica tu teléfono.', 409);
+        exigirReautenticacion();
+        ejecutar('UPDATE usuarios SET segundo_factor = ? WHERE id = ?', [$metodo, $u['id']]);
+        olvidarUsuarioEnSesion();
+        registrar($metodo ? 'segundo_factor_activar' : 'segundo_factor_desactivar', 'usuario', $u['id'], $metodo ? ['metodo' => $metodo] : null);
+        responder(['ok' => true]);
+
+    case 'recuperar_enviar':
+        // «¿Olvidaste tu contraseña?»: responde lo mismo, y antes de enviar, exista o no la cuenta,
+        // para que ni la respuesta ni su tiempo delaten qué correos están registrados.
+        exigirPost();
+        $d = entrada();
+        $email = strtolower((string)texto($d, 'email', 190, true));
+        $canal = ($d['canal'] ?? '') === 'sms' ? 'sms' : 'correo';
+        limitar('recuperar-ip:' . ip(), 10, 3600, 'Pediste demasiados códigos. Espera un rato e intenta de nuevo.');
+        limitar('recuperar-correo:' . $email, 5, 3600, 'Pediste demasiados códigos. Espera un rato e intenta de nuevo.');
+        $u = uno("SELECT id, email, telefono, telefono_verificado FROM usuarios WHERE email = ? AND estado = 'activo'", [$email]);
+        terminarRespuesta(['ok' => true, 'canal' => $canal, 'reenviar_en' => CODIGO_ESPERA,
+            'mensaje' => 'Si hay una cuenta con ese correo, te mandamos un código de 6 dígitos'
+                . ($canal === 'sms' ? ' por SMS a su teléfono verificado (o al correo, si no tiene).' : '.') . ' Caduca en 10 minutos.']);
+        if ($u) {
+            $sms = $canal === 'sms' && $u['telefono'] && $u['telefono_verificado'] && smsDisponible();
+            emitirCodigo((int)$u['id'], 'recuperar', $sms ? 'sms' : 'correo', $sms ? $u['telefono'] : $u['email'], true);
+        }
+        exit;
+
+    case 'recuperar_verificar':
+        exigirPost();
+        $d = entrada();
+        $email = strtolower((string)texto($d, 'email', 190, true));
+        limitar('recuperar-verificar-ip:' . ip(), 30, 900, 'Demasiados intentos. Espera 15 minutos.');
+        $id = (int)valor("SELECT id FROM usuarios WHERE email = ? AND estado = 'activo'", [$email]);
+        $f = $id ? verificarCodigo($id, 'recuperar', (string)($d['codigo'] ?? '')) : null;
+        if (!$f) fallar('El código no es correcto o ya caducó. Puedes pedir otro.', 422);
+        session_regenerate_id(true);
+        $_SESSION['recuperar'] = ['id' => $id, 't' => time(), 'canal' => $f['canal'], 'destino' => $f['destino']];
+        responder(['ok' => true]);
+
+    case 'recuperar_cambiar':
+        // Con el código ya verificado (10 min): guarda la contraseña nueva y cierra todas las sesiones.
+        // No inicia sesión: la persona entra con su contraseña nueva (y su segundo paso, si lo tiene).
+        exigirPost();
+        $r = $_SESSION['recuperar'] ?? null;
+        if (!$r) fallar('Primero escribe el código que te mandamos.', 401);
+        if (time() - $r['t'] > 600) {
+            unset($_SESSION['recuperar']);
+            fallar('Pasaron más de 10 minutos. Pide un código nuevo.', 401);
+        }
+        $nueva = (string)(entrada()['nueva'] ?? '');
+        $u = uno('SELECT email, nombre, telefono, password_hash FROM usuarios WHERE id = ?', [$r['id']]);
+        if ($problema = problemaContrasena($nueva, $u['email'], $u['nombre'])) fallar($problema, 422);
+        if (password_verify($nueva, $u['password_hash'])) fallar('La contraseña nueva debe ser distinta de la anterior.', 422);
+        // El código demostró que el contacto es suyo: queda verificado.
+        $verificado = $r['canal'] === 'sms'
+            ? ($r['destino'] === $u['telefono'] ? ', telefono_verificado = COALESCE(telefono_verificado, NOW())' : '')
+            : ($r['destino'] === $u['email'] ? ', email_verificado = COALESCE(email_verificado, NOW())' : '');
+        ejecutar("UPDATE usuarios SET password_hash = ?, sesion_version = sesion_version + 1{$verificado} WHERE id = ?", [hashContrasena($nueva), $r['id']]);
+        unset($_SESSION['recuperar']);
+        registrar('password_recuperar', 'usuario', $r['id'], ['canal' => $r['canal']]);
+        responder(['ok' => true]);
 
     case 'salir':
         exigirPost();

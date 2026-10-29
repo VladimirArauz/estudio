@@ -37,7 +37,7 @@ async function enviar(form, accion, datos, reglas) {
   try {
     const r = await API.post("auth.php", datos(), { accion });
     API.olvidarToken();
-    if (r.paso === "2fa") return pedirCodigo();
+    if (r.paso === "2fa") return pedirCodigo(r);
     if (r.paso === "verificar") return pedirVerificacion();
     irDestino();
   } catch (err) {
@@ -52,27 +52,105 @@ function irDestino() {
   location.href = destino && /^[a-z]+\.html([?#][\w=&%#.-]*)?$/.test(destino) ? destino : "index.html";
 }
 
-// Segundo paso del inicio de sesión: código de la app de autenticación.
+// Segundo paso del inicio de sesión: código de la app de autenticación (TOTP) o enviado por correo o SMS.
 const formCodigo = document.getElementById("formCodigo");
-function pedirCodigo() {
+function pedirCodigo(r = {}) {
   formEntrar.hidden = formRegistro.hidden = true;
   document.querySelector('[role="tablist"]').hidden = true;
   document.getElementById("tituloAcceso").textContent = "Verificación en dos pasos";
   formCodigo.hidden = false;
-  OTP.montar(document.getElementById("cajaCodigo"), {
+  const verificar = async codigo => {
+    try {
+      await API.post("auth.php", { codigo }, { accion: "verificar_2fa" });
+    } catch (err) {
+      if (err.status === 401 && /5 minutos|contraseña/.test(err.message)) setTimeout(() => location.reload(), 2500);
+      throw err;
+    }
+    API.olvidarToken();
+  };
+  const caja = document.getElementById("cajaCodigo");
+  if (r.metodo === "correo" || r.metodo === "sms") {
+    document.getElementById("textoCodigo").textContent = "Tu cuenta pide un código además de la contraseña.";
+    return flujoCodigo(caja, {
+      id: "codigoEntrar", enviado: r.destino ? r : null, verificar, alTerminar: irDestino,
+      enviar: () => API.post("auth.php", {}, { accion: "codigo_reenviar_login" })
+    });
+  }
+  OTP.montar(caja, {
     id: "codigoEntrar", etiqueta: "Código de verificación", alternativo: true,
     alCompletar: async codigo => {
-      try {
-        await API.post("auth.php", { codigo }, { accion: "verificar_2fa" });
-      } catch (err) {
-        if (err.status === 401 && /5 minutos|contraseña/.test(err.message)) setTimeout(() => location.reload(), 2500);
-        return err.message;
-      }
-      API.olvidarToken();
+      try { await verificar(codigo); } catch (err) { return err.message; }
       setTimeout(irDestino, 600); // deja ver el estado «Verificado»
       return true;
     }
   }).enfocar();
+}
+
+// «¿Olvidaste tu contraseña?»: correo → código (correo o SMS) → contraseña nueva → volver a entrar.
+const secRecuperar = document.getElementById("recuperar");
+const formRecuperar = document.getElementById("formRecuperar");
+const cajaRecuperar = document.getElementById("cajaRecuperar");
+document.getElementById("olvide").addEventListener("click", async () => {
+  formEntrar.hidden = true;
+  document.querySelector('[role="tablist"]').hidden = true;
+  document.getElementById("tituloAcceso").textContent = "Recupera tu cuenta";
+  secRecuperar.hidden = formRecuperar.hidden = false;
+  cajaRecuperar.innerHTML = "";
+  document.getElementById("emailRecuperar").value = document.getElementById("emailEntrar").value.trim();
+  document.getElementById("emailRecuperar").focus();
+  document.getElementById("canalRecuperar").hidden = !(await Sesion.yo()).sms;
+});
+function volverAEntrar(email = "", aviso = "") {
+  secRecuperar.hidden = true;
+  document.querySelector('[role="tablist"]').hidden = false;
+  mostrar(false);
+  if (email) document.getElementById("emailEntrar").value = email;
+  const mensaje = formEntrar.querySelector(".form__mensaje");
+  mensaje.className = "form__mensaje " + (aviso ? "form__mensaje--ok" : "form__mensaje--error");
+  mensaje.textContent = aviso;
+  document.getElementById(email ? "passEntrar" : "emailEntrar").focus();
+}
+formRecuperar.querySelector("[data-volver]").addEventListener("click", () => volverAEntrar());
+formRecuperar.addEventListener("submit", e => {
+  e.preventDefault();
+  const error = validar(formRecuperar, [["emailRecuperar", esCorreo, "Escribe tu correo completo, por ejemplo nombre@gmail.com."]]);
+  formRecuperar.querySelector(".form__mensaje").textContent = error;
+  if (error) return;
+  const email = document.getElementById("emailRecuperar").value.trim();
+  const canal = formRecuperar.querySelector('[name="canalRecuperar"]:checked').value;
+  formRecuperar.hidden = true;
+  flujoCodigo(cajaRecuperar, {
+    id: "codigoRecuperar",
+    enviar: () => API.post("auth.php", { email, canal }, { accion: "recuperar_enviar" }),
+    verificar: codigo => API.post("auth.php", { email, codigo }, { accion: "recuperar_verificar" }),
+    alTerminar: () => nuevaContrasena(email)
+  });
+});
+function nuevaContrasena(email) {
+  cajaRecuperar.innerHTML = `
+    <form class="form" novalidate>
+      <div class="campo"><label for="passRecuperar">Contraseña nueva</label>
+        <input type="password" id="passRecuperar" autocomplete="new-password" minlength="10" required>
+        <span class="campo__ayuda">Mínimo 10 caracteres. Al guardarla se cerrarán tus sesiones abiertas en otros dispositivos.</span></div>
+      <p class="form__mensaje form__mensaje--error" role="alert"></p>
+      <div class="form__acciones" style="justify-content: flex-start"><button class="btn btn--primario" type="submit">Guardar contraseña</button></div>
+    </form>`;
+  const form = cajaRecuperar.querySelector("form");
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const mensaje = form.querySelector(".form__mensaje");
+    mensaje.textContent = validar(form, [["passRecuperar", v => v.length >= PASSWORD_MIN, `La contraseña debe tener al menos ${PASSWORD_MIN} caracteres.`]]);
+    if (mensaje.textContent) return;
+    try {
+      await API.post("auth.php", { nueva: form.querySelector("#passRecuperar").value }, { accion: "recuperar_cambiar" });
+      API.olvidarToken();
+      volverAEntrar(email, "Listo: tu contraseña cambió. Entra con la nueva.");
+    } catch (err) {
+      mensaje.textContent = err.message;
+      if (err.status === 401) setTimeout(() => volverAEntrar(email), 2500);
+    }
+  });
+  form.querySelector("#passRecuperar").focus();
 }
 
 const esCorreo = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -90,7 +168,7 @@ formEntrar.addEventListener("submit", e => {
 // Con sesión iniciada, la página muestra «Tu cuenta» con el cambio de contraseña.
 (async () => {
   const yo = await Sesion.yo();
-  if (yo.pendiente_2fa) return pedirCodigo();
+  if (yo.pendiente_2fa) return pedirCodigo(yo.pendiente ? { metodo: yo.pendiente.canal, ...yo.pendiente } : {});
   if (!yo.usuario) return;
   document.getElementById("tituloAcceso").textContent = "Tu cuenta";
   document.querySelector('[role="tablist"]').hidden = true;
@@ -142,6 +220,7 @@ function flujoCodigo(caja, { id, enviar, verificar, alTerminar, enviado = null, 
     reloj = setInterval(paso, 1000);
   }
   function mostrar(r) {
+    if (r.mensaje) { destino.textContent = r.mensaje; return esperar(r.reenviar_en); }
     destino.textContent = `Te mandamos un código de 6 dígitos ${r.canal === "sms" ? "por SMS al" : "a"} ${r.destino}. Caduca en 10 minutos.`;
     esperar(r.reenviar_en);
   }
@@ -272,11 +351,35 @@ function pintarDosPasos(yo) {
     });
     return;
   }
+  const u = yo.usuario;
+  const porCodigo = u.segundo_factor
+    ? `<p class="nota nota--ok"><span class="rotulo">Activa</span><span>Al entrar te mandaremos un código
+        ${u.segundo_factor === "sms" ? `por SMS al ${escapar(u.telefono)}` : `a tu correo ${escapar(u.email)}`}.</span></p>
+       <div class="form__acciones" style="justify-content: flex-start"><button class="btn btn--secundario" type="button" data-sin-codigo>Desactivar</button></div>`
+    : "";
   caja.innerHTML = `
     ${yo.rol === "admin" ? '<p class="nota nota--aviso"><span class="rotulo">Obligatoria</span><span>Las cuentas de admin necesitan la verificación en dos pasos para usar el panel de control.</span></p>' : ""}
-    <p class="texto-2">Además de tu contraseña, te pediremos un código de una app como Google Authenticator, Microsoft Authenticator o Aegis.
-      Así, aunque alguien sepa tu contraseña, no podrá entrar.</p>
-    <div class="form__acciones" style="justify-content: flex-start"><button class="btn btn--secundario" type="button" data-iniciar>Activar verificación en dos pasos</button></div>`;
+    ${porCodigo}
+    <p class="texto-2">${u.segundo_factor ? "¿Prefieres una app? Es más segura que el SMS y funciona sin señal: " : "Además de tu contraseña, "}te pediremos
+      un código de una app como Google Authenticator, Microsoft Authenticator o Aegis. Así, aunque alguien sepa tu contraseña, no podrá entrar.</p>
+    <div class="form__acciones" style="justify-content: flex-start"><button class="btn btn--secundario" type="button" data-iniciar>${u.segundo_factor ? "Usar una app de autenticación" : "Activar verificación en dos pasos"}</button></div>
+    ${yo.rol !== "admin" && !u.segundo_factor ? `
+      <p class="texto-2">¿No tienes una app? También podemos mandarte el código por correo${yo.sms ? " o por SMS" : ""} cada vez que entres.</p>
+      <div class="fila">
+        <button class="btn btn--secundario btn--sm" type="button" data-codigo="correo"${u.email_verificado ? "" : " disabled"}>Código por correo</button>
+        ${yo.sms ? `<button class="btn btn--secundario btn--sm" type="button" data-codigo="sms"${u.telefono_verificado ? "" : " disabled"}>Código por SMS</button>` : ""}
+      </div>
+      ${!u.email_verificado || (yo.sms && !u.telefono_verificado) ? '<span class="campo__ayuda">Solo se puede usar un correo o teléfono verificado (arriba, en «Correo y teléfono»).</span>' : ""}` : ""}`;
+  const repintar = async () => { const nuevo = await Sesion.yo(true); pintarContacto(nuevo); pintarDosPasos(nuevo); };
+  caja.querySelectorAll("[data-codigo]").forEach(b => b.addEventListener("click", async () => {
+    try { await API.post("auth.php", { metodo: b.dataset.codigo }, { accion: "segundo_factor" }); avisar("Listo: al entrar te pediremos un código."); repintar(); }
+    catch (err) { avisar(err.message, "error"); }
+  }));
+  caja.querySelector("[data-sin-codigo]")?.addEventListener("click", async () => {
+    if (!confirm("¿Desactivar el código al entrar? Tu cuenta quedará protegida solo con la contraseña.")) return;
+    try { await API.post("auth.php", { metodo: null }, { accion: "segundo_factor" }); avisar("Verificación en dos pasos desactivada."); repintar(); }
+    catch (err) { avisar(err.message, "error"); }
+  });
   caja.querySelector("[data-iniciar]").addEventListener("click", async () => {
     let r;
     try { r = await API.post("auth.php", {}, { accion: "totp_iniciar" }); } catch (err) { return avisar(err.message, "error"); }
