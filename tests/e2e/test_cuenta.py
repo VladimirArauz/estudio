@@ -6,7 +6,7 @@ import time
 
 from playwright.sync_api import expect
 
-from ayuda import CONTRASENA, totp
+from ayuda import CONTRASENA, totp, ultimo_codigo
 from e2e.conftest import entrar_ui, escribir_codigo, ir
 
 
@@ -14,7 +14,8 @@ def test_registro_valida_y_crea_cuenta(pagina):
     ir(pagina, "login.html#registro")
     expect(pagina.locator("#formRegistro")).to_be_visible()
     pagina.fill("#nombreRegistro", "Lucía Prueba")
-    pagina.fill("#emailRegistro", f"lucia{time.time_ns()}@pruebas.test")
+    correo = f"lucia{time.time_ns()}@pruebas.test"
+    pagina.fill("#emailRegistro", correo)
     pagina.fill("#passRegistro", "corta")
     pagina.click("#formRegistro [type=submit]")
     expect(pagina.locator("#formRegistro .form__mensaje")).to_contain_text("al menos 10")
@@ -23,6 +24,11 @@ def test_registro_valida_y_crea_cuenta(pagina):
     expect(pagina.locator("#formRegistro .form__mensaje")).to_contain_text("más usadas")
     pagina.fill("#passRegistro", CONTRASENA)
     pagina.click("#formRegistro [type=submit]")
+    # Cuenta creada: pide verificar el correo con el código que llegó (buzón simulado).
+    expect(pagina.locator("#verificar")).to_be_visible()
+    expect(pagina.locator("#cajaVerificar")).to_contain_text("Te mandamos un código")
+    escribir_codigo(pagina, "#codigoCorreo", ultimo_codigo(correo))
+    expect(pagina.locator("#cajaVerificar .otp--ok")).to_be_visible()
     pagina.wait_for_url(re.compile(r".*/index\.html"))
     ir(pagina, "login.html")
     expect(pagina.locator("#cuentaDatos")).to_contain_text("Lucía Prueba")

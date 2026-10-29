@@ -82,20 +82,26 @@ switch (accion()) {
         $email = strtolower(texto($d, 'email', 190, true));
         $pass = (string)($d['password'] ?? '');
         $rolPedido = ($d['rol'] ?? 'alumno') === 'profesor' ? 'profesor' : 'alumno'; // el admin solo se crea por consola
+        $textoTel = trim((string)($d['telefono'] ?? ''));
 
         limitar('registro:' . ip(), 10, 3600, 'Demasiados registros desde esta conexión. Intenta más tarde.');
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) fallar('Escribe un correo válido, por ejemplo nombre@gmail.com.', 422);
         if ($problema = problemaContrasena($pass, $email, $nombre)) fallar($problema, 422);
+        $telefono = null;
+        if ($textoTel !== '' && !($telefono = normalizarTelefono($textoTel))) {
+            fallar('Escribe tu teléfono a 10 dígitos (por ejemplo 55 1234 5678) o con el código de país (+1…), o déjalo vacío.', 422);
+        }
         // Riesgo aceptado: avisar que el correo ya existe ayuda a quien olvidó que tenía cuenta; el límite
         // por conexión de arriba frena que se use para adivinar correos en masa.
         if (valor('SELECT 1 FROM usuarios WHERE email = ?', [$email])) fallar('Ya existe una cuenta con ese correo. Inicia sesión.', 409);
 
-        ejecutar('INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES (?, ?, ?, ?)',
-            [$nombre, $email, hashContrasena($pass), $rolPedido]);
+        // La cuenta nueva debe verificar su correo o su teléfono antes de subir, postularse o inscribirse.
+        ejecutar('INSERT INTO usuarios (nombre, email, password_hash, rol, telefono, requiere_verificar) VALUES (?, ?, ?, ?, ?, 1)',
+            [$nombre, $email, hashContrasena($pass), $rolPedido, $telefono]);
         $id = (int)db()->lastInsertId();
         iniciarSesion($id);
-        registrar('registro', 'usuario', $id, ['rol' => $rolPedido]);
-        responder(['ok' => true, 'rol' => $rolPedido, 'csrf' => $_SESSION['csrf']], 201);
+        registrar('registro', 'usuario', $id, ['rol' => $rolPedido, 'telefono' => $telefono !== null]);
+        responder(['ok' => true, 'rol' => $rolPedido, 'paso' => 'verificar', 'csrf' => $_SESSION['csrf']], 201);
 
     case 'cambiar_password':
         exigirPost();

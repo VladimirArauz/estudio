@@ -38,6 +38,7 @@ async function enviar(form, accion, datos, reglas) {
     const r = await API.post("auth.php", datos(), { accion });
     API.olvidarToken();
     if (r.paso === "2fa") return pedirCodigo();
+    if (r.paso === "verificar") return pedirVerificacion();
     irDestino();
   } catch (err) {
     error.textContent = err.message;
@@ -75,6 +76,7 @@ function pedirCodigo() {
 }
 
 const esCorreo = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+const esTelefono = v => /^(\d{10}|\+[1-9]\d{7,14})$/.test(v.replace(/[\s().-]/g, ""));
 const PASSWORD_MIN = 10;
 
 formEntrar.addEventListener("submit", e => {
@@ -111,8 +113,151 @@ formEntrar.addEventListener("submit", e => {
       mensaje.textContent = "Listo: tu contraseña cambió. Se cerraron tus sesiones en otros dispositivos.";
     } catch (err) { mensaje.textContent = err.message; }
   });
+  pintarContacto(yo);
   pintarDosPasos(yo);
 })();
+
+// Manda un código (enviar) y muestra el input OTP con «Reenviar» y su cuenta regresiva.
+// enviar() → { canal, destino, reenviar_en }; verificar(codigo) lanza un Error si no es correcto.
+// Con `enviado` (la respuesta de un envío que ya ocurrió) no vuelve a mandar al abrir.
+function flujoCodigo(caja, { id, enviar, verificar, alTerminar, enviado = null, alternativo = false }) {
+  caja.innerHTML = `
+    <div class="pila" style="gap: var(--e-3)">
+      <p class="texto-2" data-destino aria-live="polite">Enviando código…</p>
+      <div data-otp></div>
+      <div><button class="btn btn--terciario btn--sm" type="button" data-reenviar disabled>Reenviar código</button></div>
+    </div>`;
+  const destino = caja.querySelector("[data-destino]");
+  const reenviar = caja.querySelector("[data-reenviar]");
+  let reloj;
+  function esperar(segundos) {
+    clearInterval(reloj);
+    const paso = () => {
+      if (!caja.isConnected) return clearInterval(reloj);
+      if (segundos <= 0) { clearInterval(reloj); reenviar.disabled = false; reenviar.textContent = "Reenviar código"; return; }
+      reenviar.disabled = true;
+      reenviar.textContent = `Reenviar en ${segundos--} s`;
+    };
+    paso();
+    reloj = setInterval(paso, 1000);
+  }
+  function mostrar(r) {
+    destino.textContent = `Te mandamos un código de 6 dígitos ${r.canal === "sms" ? "por SMS al" : "a"} ${r.destino}. Caduca en 10 minutos.`;
+    esperar(r.reenviar_en);
+  }
+  async function mandar() {
+    reenviar.disabled = true;
+    try { mostrar(await enviar()); }
+    catch (err) { destino.textContent = err.message; esperar(err.datos?.reenviar_en || 0); }
+  }
+  reenviar.addEventListener("click", mandar);
+  OTP.montar(caja.querySelector("[data-otp]"), {
+    id, etiqueta: "Código de verificación", alternativo,
+    alCompletar: async codigo => {
+      try { await verificar(codigo); } catch (err) { return err.message; }
+      clearInterval(reloj);
+      reenviar.hidden = true;
+      setTimeout(alTerminar, 700);
+      return true;
+    }
+  }).enfocar();
+  if (enviado) mostrar(enviado); else mandar();
+}
+
+// Verificar el correo o el teléfono: si hay teléfono y SMS, la persona elige por dónde le llega el código.
+function verificarContacto(caja, yo, alTerminar, proposito = null) {
+  const u = yo.usuario;
+  const puedeSms = u.telefono && !u.telefono_verificado && yo.sms;
+  const iniciar = p => flujoCodigo(caja, {
+    id: p === "verificar_correo" ? "codigoCorreo" : "codigoTelefono",
+    enviar: () => API.post("auth.php", { proposito: p }, { accion: "codigo_enviar" }),
+    verificar: codigo => API.post("auth.php", { proposito: p, codigo }, { accion: "codigo_verificar" }),
+    alTerminar
+  });
+  if (proposito || !puedeSms || u.email_verificado) return iniciar(proposito || (u.email_verificado ? "verificar_telefono" : "verificar_correo"));
+  caja.innerHTML = `
+    <p class="campo__etiqueta">¿Por dónde te mandamos el código?</p>
+    <div class="fila">
+      <button class="btn btn--secundario" type="button" data-p="verificar_correo">${icono("documento", "icono--16")} Correo · ${escapar(u.email)}</button>
+      <button class="btn btn--secundario" type="button" data-p="verificar_telefono">${icono("rayo", "icono--16")} SMS · ${escapar(u.telefono)}</button>
+    </div>`;
+  caja.querySelectorAll("[data-p]").forEach(b => b.addEventListener("click", () => iniciar(b.dataset.p)));
+}
+
+// Después de crear la cuenta: verificar el contacto (o dejarlo para después).
+async function pedirVerificacion() {
+  const yo = await Sesion.yo(true);
+  formEntrar.hidden = formRegistro.hidden = true;
+  document.querySelector('[role="tablist"]').hidden = true;
+  document.getElementById("tituloAcceso").textContent = "Verifica tu cuenta";
+  document.getElementById("verificar").hidden = false;
+  verificarContacto(document.getElementById("cajaVerificar"), yo, irDestino);
+}
+document.getElementById("verificarDespues").addEventListener("click", irDestino);
+
+// «Mi cuenta» · correo y teléfono: estado de verificación, verificar, agregar, cambiar o quitar el teléfono.
+function pintarContacto(yo) {
+  const caja = document.getElementById("contacto");
+  const u = yo.usuario;
+  const estado = ok => `<span class="chip ${ok ? "chip--ok" : "chip--aviso"}">${ok ? "Verificado" : "Sin verificar"}</span>`;
+  caja.innerHTML = `
+    ${u.requiere_verificar && !u.email_verificado && !u.telefono_verificado
+      ? '<p class="nota nota--aviso"><span class="rotulo">Pendiente</span><span>Verifica tu correo o tu teléfono para subir material, postularte e inscribirte a cursos.</span></p>' : ""}
+    <ul class="filas">
+      <li><div class="filas__principal"><span class="filas__meta">Correo</span><span class="filas__titulo">${escapar(u.email)}</span></div>
+        <div class="fila">${estado(u.email_verificado)}
+        ${u.email_verificado ? "" : '<button class="btn btn--secundario btn--sm" type="button" data-verificar="verificar_correo">Verificar</button>'}</div></li>
+      <li><div class="filas__principal"><span class="filas__meta">Teléfono</span><span class="filas__titulo">${u.telefono ? escapar(u.telefono) : "Sin teléfono"}</span></div>
+        <div class="fila">${u.telefono ? estado(u.telefono_verificado) : ""}
+        ${u.telefono && !u.telefono_verificado && yo.sms ? '<button class="btn btn--secundario btn--sm" type="button" data-verificar="verificar_telefono">Verificar</button>' : ""}
+        <button class="btn btn--secundario btn--sm" type="button" data-telefono>${u.telefono ? "Cambiar" : "Agregar"}</button>
+        ${u.telefono ? '<button class="btn btn--peligro btn--sm" type="button" data-quitar>Quitar</button>' : ""}</div></li>
+    </ul>
+    <div data-flujo></div>`;
+  const flujo = caja.querySelector("[data-flujo]");
+  const repintar = async () => { const nuevo = await Sesion.yo(true); pintarContacto(nuevo); pintarDosPasos(nuevo); };
+
+  caja.querySelectorAll("[data-verificar]").forEach(b => b.addEventListener("click", () =>
+    verificarContacto(flujo, yo, () => { avisar("Listo: quedó verificado."); repintar(); }, b.dataset.verificar)));
+
+  caja.querySelector("[data-quitar]")?.addEventListener("click", async () => {
+    if (!confirm("¿Quitar tu teléfono? Ya no podrás recibir códigos por SMS.")) return;
+    try { await API.post("auth.php", { telefono: "" }, { accion: "telefono_guardar" }); avisar("Teléfono quitado."); repintar(); }
+    catch (err) { avisar(err.message, "error"); }
+  });
+
+  caja.querySelector("[data-telefono]").addEventListener("click", () => {
+    flujo.innerHTML = `
+      <form class="form" novalidate data-form-telefono>
+        <div class="campo"><label for="telCuenta">Teléfono</label>
+          <input type="tel" id="telCuenta" autocomplete="tel" inputmode="tel" maxlength="20" required>
+          <span class="campo__ayuda">10 dígitos, o con el código de país si no es de México (+1…).</span></div>
+        <p class="form__mensaje form__mensaje--error" role="alert"></p>
+        <div class="form__acciones" style="justify-content: flex-start">
+          <button class="btn btn--primario" type="submit">Guardar teléfono</button>
+          <button class="btn btn--secundario" type="button" data-cancelar>Cancelar</button>
+        </div>
+      </form>`;
+    const form = flujo.querySelector("form");
+    form.querySelector("[data-cancelar]").addEventListener("click", () => { flujo.innerHTML = ""; });
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      const error = validar(form, [["telCuenta", v => v !== "" && esTelefono(v), "Escribe tu teléfono a 10 dígitos, por ejemplo 55 1234 5678."]]);
+      form.querySelector(".form__mensaje").textContent = error;
+      if (error) return;
+      try {
+        await API.post("auth.php", { telefono: form.querySelector("#telCuenta").value.trim() }, { accion: "telefono_guardar" });
+        avisar("Teléfono guardado.");
+        const nuevo = await Sesion.yo(true);
+        pintarContacto(nuevo);
+        pintarDosPasos(nuevo);
+        // Si se puede, se ofrece verificarlo de una vez.
+        if (nuevo.sms) verificarContacto(document.querySelector("#contacto [data-flujo]"), nuevo, () => { avisar("Listo: quedó verificado."); repintar(); }, "verificar_telefono");
+      } catch (err) { form.querySelector(".form__mensaje").textContent = err.message; }
+    });
+    form.querySelector("#telCuenta").focus();
+  });
+}
 
 // «Mi cuenta» · verificación en dos pasos: activar con QR, códigos de recuperación y (si no es admin) desactivar.
 function pintarDosPasos(yo) {
@@ -172,10 +317,12 @@ formRegistro.addEventListener("submit", e => {
     () => ({
       nombre: document.getElementById("nombreRegistro").value.trim(),
       email: document.getElementById("emailRegistro").value.trim(),
+      telefono: document.getElementById("telRegistro").value.trim(),
       password: document.getElementById("passRegistro").value,
       rol: formRegistro.querySelector('[name="rol"]:checked').value
     }),
     [["nombreRegistro", v => v.length >= 2, "Escribe tu nombre completo."],
      ["emailRegistro", esCorreo, "Escribe un correo válido, por ejemplo nombre@gmail.com."],
+     ["telRegistro", v => v === "" || esTelefono(v), "Escribe tu teléfono a 10 dígitos (por ejemplo 55 1234 5678) o déjalo vacío."],
      ["passRegistro", v => v.length >= PASSWORD_MIN, `La contraseña debe tener al menos ${PASSWORD_MIN} caracteres.`]]);
 });

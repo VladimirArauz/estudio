@@ -24,6 +24,8 @@
       <div class="lamina__principal pila" style="gap: var(--e-5); max-width: 32rem; grid-column: 1 / span 6">
         <section class="pila" id="cuenta" hidden>
           <p class="rotulo" id="cuentaDatos"></p>
+          <h2 class="lamina__titulo" id="tituloContacto">Correo y teléfono</h2>
+          <div class="pila" id="contacto" aria-labelledby="tituloContacto"></div>
           <h2 class="lamina__titulo">Cambiar contraseña</h2>
           <form class="form" id="formPassword" novalidate>
             <div class="campo"><label for="passActual">Contraseña actual</label><input type="password" id="passActual" autocomplete="current-password" required></div>
@@ -61,6 +63,15 @@
           <div id="cajaCodigo"></div>
         </div>
 
+        <section class="pila" id="verificar" hidden>
+          <p class="texto-2">Tu cuenta ya está creada. Confirma que el correo (o el teléfono) es tuyo: así podrás subir material,
+            inscribirte a cursos y recuperar tu cuenta si olvidas la contraseña.</p>
+          <div id="cajaVerificar"></div>
+          <div class="form__acciones" style="justify-content: flex-start">
+            <button class="btn btn--terciario" type="button" id="verificarDespues">Hacerlo después</button>
+          </div>
+        </section>
+
         <form class="form" id="formRegistro" role="tabpanel" aria-labelledby="tabRegistro" novalidate hidden>
           <div class="campo">
             <label for="nombreRegistro">Nombre completo</label>
@@ -69,6 +80,11 @@
           <div class="campo">
             <label for="emailRegistro">Correo</label>
             <input type="email" id="emailRegistro" autocomplete="email" required>
+          </div>
+          <div class="campo">
+            <label for="telRegistro">Teléfono (opcional)</label>
+            <input type="tel" id="telRegistro" autocomplete="tel" inputmode="tel" maxlength="20">
+            <span class="campo__ayuda">10 dígitos. Solo lo usaremos para mandarte códigos de verificación por SMS.</span>
           </div>
           <div class="campo">
             <label for="passRegistro">Contraseña</label>

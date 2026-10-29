@@ -182,6 +182,7 @@
 .btn--peligro { border-color: var(--error); color: var(--error); }
 .btn--peligro:hover:not(:disabled) { background: color-mix(in srgb, var(--error) 12%, transparent); }
 .btn--sm { min-height: 36px; padding: var(--e-1) var(--e-3); font-size: var(--t-sm); }
+.btn--terciario.btn--sm { padding-inline: 0; }
 .btn--icono { width: 44px; padding: 0; }
 .icono { width: 20px; height: 20px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: square; stroke-linejoin: miter; }
 .icono--16 { width: 16px; height: 16px; }
@@ -360,7 +361,7 @@ button.chip:hover, a.chip:hover { border-color: var(--sec); color: var(--fg); }
 .otp__estado--error { color: var(--error); }
 .otp__estado--ok { color: var(--ok); font-weight: 500; }
 .otp__alterno .input { width: 14rem; max-width: 100%; }
-.otp__cambiar { padding-inline: 0; min-height: 32px; }
+.otp__cambiar { min-height: 32px; }
 @keyframes otp-pop { 40% { transform: scale(1.14); } }
 @keyframes otp-sacudir { 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
 @keyframes otp-brillo {
