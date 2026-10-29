@@ -108,6 +108,13 @@ function enviarSms(string $telefono, string $texto): bool {
     return true;
 }
 
+// Sin buzón SMTP configurado no se mandan códigos por correo (ni se exige verificar el correo).
+function correoDisponible(): bool {
+    global $CONFIG;
+    $c = $CONFIG['mensajes'];
+    return !empty($c['simulado']) || (($c['smtp']['host'] ?? '') !== '' && ($c['smtp']['user'] ?? '') !== '' && ($c['smtp']['pass'] ?? '') !== '');
+}
+
 // El SMS solo se ofrece si hay credenciales (o en pruebas, con el buzón simulado).
 function smsDisponible(): bool {
     global $CONFIG;

@@ -42,6 +42,8 @@ y en «¿Olvidaste tu contraseña?». Las credenciales van en `config/config.loc
 - Envíos fallidos: quedan en la tabla `logs` con acción `envio_fallido` (sin el código) y en el log de PHP
   (`[estudio] Envío por … falló`). Nunca se registra el texto del mensaje.
 - En el entorno de pruebas no sale nada: los mensajes se escriben en `storage-pruebas/buzon.jsonl`.
+- **Sin credenciales** (ni SMTP ni Twilio) el sitio sigue funcionando como antes: no se pide verificar la cuenta,
+  no aparece «¿Olvidaste tu contraseña?» ni el código por correo o SMS. Al poner el buzón de SMTP se activa todo solo.
 
 ## Logs
 `/etc/logrotate.d/estudio` rota cada semana los logs de Apache (`/opt/lampp/logs`) y de PHP

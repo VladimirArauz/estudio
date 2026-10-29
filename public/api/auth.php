@@ -22,6 +22,7 @@ switch (accion()) {
                 'requiere_verificar' => $u['requiere_verificar'] ?? false, 'segundo_factor' => $u['segundo_factor'] ?? null,
             ] : null,
             'sms' => smsDisponible(),
+            'correo' => correoDisponible(),
             'rol' => rol(),
             'csrf' => $_SESSION['csrf'],
             'pendiente_2fa' => !$u && !empty($_SESSION['pendiente_2fa']),
@@ -123,7 +124,8 @@ switch (accion()) {
         $id = (int)db()->lastInsertId();
         iniciarSesion($id);
         registrar('registro', 'usuario', $id, ['rol' => $rolPedido, 'telefono' => $telefono !== null]);
-        responder(['ok' => true, 'rol' => $rolPedido, 'paso' => 'verificar', 'csrf' => $_SESSION['csrf']], 201);
+        $paso = correoDisponible() || ($telefono && smsDisponible()) ? 'verificar' : null;
+        responder(['ok' => true, 'rol' => $rolPedido, 'paso' => $paso, 'csrf' => $_SESSION['csrf']], 201);
 
     case 'cambiar_password':
         exigirPost();
@@ -198,6 +200,7 @@ switch (accion()) {
         $proposito = (string)(entrada()['proposito'] ?? '');
         if ($proposito === 'verificar_correo') {
             if ($u['email_verificado']) fallar('Tu correo ya está verificado.', 409);
+            if (!correoDisponible()) fallar('El envío de correos no está disponible por ahora.', 503);
             responder(['ok' => true] + emitirCodigo($u['id'], $proposito, 'correo', $u['email']));
         }
         if ($proposito === 'verificar_telefono') {
@@ -261,7 +264,7 @@ switch (accion()) {
         if (!in_array($metodo, ['correo', 'sms', null], true)) fallar('Método no válido.', 422);
         if ($metodo !== null && $u['rol'] === 'admin') fallar('Las cuentas de admin usan la app de autenticación.', 403);
         if ($metodo !== null && $u['totp_activo']) fallar('Ya tienes la app de autenticación activa. Desactívala primero.', 409);
-        if ($metodo === 'correo' && !$u['email_verificado']) fallar('Primero verifica tu correo.', 409);
+        if ($metodo === 'correo' && (!$u['email_verificado'] || !correoDisponible())) fallar('Primero verifica tu correo.', 409);
         if ($metodo === 'sms' && (!$u['telefono_verificado'] || !smsDisponible())) fallar('Primero agrega y verifica tu teléfono.', 409);
         exigirReautenticacion();
         ejecutar('UPDATE usuarios SET segundo_factor = ? WHERE id = ?', [$metodo, $u['id']]);
@@ -276,6 +279,7 @@ switch (accion()) {
         $d = entrada();
         $email = strtolower((string)texto($d, 'email', 190, true));
         $canal = ($d['canal'] ?? '') === 'sms' ? 'sms' : 'correo';
+        if (!correoDisponible() && !smsDisponible()) fallar('La recuperación por código no está disponible por ahora. Escribe a la administración.', 503);
         limitar('recuperar-ip:' . ip(), 10, 3600, 'Pediste demasiados códigos. Espera un rato e intenta de nuevo.');
         limitar('recuperar-correo:' . $email, 5, 3600, 'Pediste demasiados códigos. Espera un rato e intenta de nuevo.');
         $u = uno("SELECT id, email, telefono, telefono_verificado FROM usuarios WHERE email = ? AND estado = 'activo'", [$email]);

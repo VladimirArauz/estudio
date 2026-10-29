@@ -1,6 +1,7 @@
 <?php
 // Base de todos los endpoints: JSON, sesión, CSRF, roles y registro de actividad.
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/mensajes.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
@@ -153,7 +154,9 @@ function excedeLimite(string $clave, int $max, int $segundos): bool {
 
 // Las cuentas nuevas deben verificar su correo o su teléfono antes de subir, postularse o inscribirse.
 // Las que ya existían antes de la verificación tienen requiere_verificar = 0 y no se bloquean.
+// Si no hay por dónde mandar códigos (sin SMTP ni SMS configurados), no se exige.
 function requiereVerificado(array $u): void {
+    if (!correoDisponible() && !smsDisponible()) return;
     if (!empty($u['requiere_verificar']) && empty($u['email_verificado']) && empty($u['telefono_verificado'])) {
         responder(['error' => 'Verifica tu correo o tu teléfono para continuar. Hazlo en «Mi cuenta».', 'code' => 'VERIFICAR'], 403);
     }

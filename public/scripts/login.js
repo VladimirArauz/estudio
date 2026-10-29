@@ -98,7 +98,9 @@ document.getElementById("olvide").addEventListener("click", async () => {
   cajaRecuperar.innerHTML = "";
   document.getElementById("emailRecuperar").value = document.getElementById("emailEntrar").value.trim();
   document.getElementById("emailRecuperar").focus();
-  document.getElementById("canalRecuperar").hidden = !(await Sesion.yo()).sms;
+  const yo = await Sesion.yo();
+  document.getElementById("canalRecuperar").hidden = !yo.sms || !yo.correo;
+  formRecuperar.querySelector(`[name="canalRecuperar"][value="${yo.correo ? "correo" : "sms"}"]`).checked = true;
 });
 function volverAEntrar(email = "", aviso = "") {
   secRecuperar.hidden = true;
@@ -168,6 +170,7 @@ formEntrar.addEventListener("submit", e => {
 // Con sesión iniciada, la página muestra «Tu cuenta» con el cambio de contraseña.
 (async () => {
   const yo = await Sesion.yo();
+  document.getElementById("olvide").hidden = !yo.correo && !yo.sms;
   if (yo.pendiente_2fa) return pedirCodigo(yo.pendiente ? { metodo: yo.pendiente.canal, ...yo.pendiente } : {});
   if (!yo.usuario) return;
   document.getElementById("tituloAcceso").textContent = "Tu cuenta";
@@ -247,6 +250,7 @@ function flujoCodigo(caja, { id, enviar, verificar, alTerminar, enviado = null, 
 function verificarContacto(caja, yo, alTerminar, proposito = null) {
   const u = yo.usuario;
   const puedeSms = u.telefono && !u.telefono_verificado && yo.sms;
+  if (!proposito && !yo.correo) proposito = "verificar_telefono";
   const iniciar = p => flujoCodigo(caja, {
     id: p === "verificar_correo" ? "codigoCorreo" : "codigoTelefono",
     enviar: () => API.post("auth.php", { proposito: p }, { accion: "codigo_enviar" }),
@@ -280,12 +284,12 @@ function pintarContacto(yo) {
   const u = yo.usuario;
   const estado = ok => `<span class="chip ${ok ? "chip--ok" : "chip--aviso"}">${ok ? "Verificado" : "Sin verificar"}</span>`;
   caja.innerHTML = `
-    ${u.requiere_verificar && !u.email_verificado && !u.telefono_verificado
+    ${u.requiere_verificar && !u.email_verificado && !u.telefono_verificado && (yo.correo || yo.sms)
       ? '<p class="nota nota--aviso"><span class="rotulo">Pendiente</span><span>Verifica tu correo o tu teléfono para subir material, postularte e inscribirte a cursos.</span></p>' : ""}
     <ul class="filas">
       <li><div class="filas__principal"><span class="filas__meta">Correo</span><span class="filas__titulo">${escapar(u.email)}</span></div>
         <div class="fila">${estado(u.email_verificado)}
-        ${u.email_verificado ? "" : '<button class="btn btn--secundario btn--sm" type="button" data-verificar="verificar_correo">Verificar</button>'}</div></li>
+        ${u.email_verificado || !yo.correo ? "" : '<button class="btn btn--secundario btn--sm" type="button" data-verificar="verificar_correo">Verificar</button>'}</div></li>
       <li><div class="filas__principal"><span class="filas__meta">Teléfono</span><span class="filas__titulo">${u.telefono ? escapar(u.telefono) : "Sin teléfono"}</span></div>
         <div class="fila">${u.telefono ? estado(u.telefono_verificado) : ""}
         ${u.telefono && !u.telefono_verificado && yo.sms ? '<button class="btn btn--secundario btn--sm" type="button" data-verificar="verificar_telefono">Verificar</button>' : ""}
@@ -363,13 +367,13 @@ function pintarDosPasos(yo) {
     <p class="texto-2">${u.segundo_factor ? "¿Prefieres una app? Es más segura que el SMS y funciona sin señal: " : "Además de tu contraseña, "}te pediremos
       un código de una app como Google Authenticator, Microsoft Authenticator o Aegis. Así, aunque alguien sepa tu contraseña, no podrá entrar.</p>
     <div class="form__acciones" style="justify-content: flex-start"><button class="btn btn--secundario" type="button" data-iniciar>${u.segundo_factor ? "Usar una app de autenticación" : "Activar verificación en dos pasos"}</button></div>
-    ${yo.rol !== "admin" && !u.segundo_factor ? `
-      <p class="texto-2">¿No tienes una app? También podemos mandarte el código por correo${yo.sms ? " o por SMS" : ""} cada vez que entres.</p>
+    ${yo.rol !== "admin" && !u.segundo_factor && (yo.correo || yo.sms) ? `
+      <p class="texto-2">¿No tienes una app? También podemos mandarte el código por ${[yo.correo && "correo", yo.sms && "SMS"].filter(Boolean).join(" o ")} cada vez que entres.</p>
       <div class="fila">
-        <button class="btn btn--secundario btn--sm" type="button" data-codigo="correo"${u.email_verificado ? "" : " disabled"}>Código por correo</button>
+        ${yo.correo ? `<button class="btn btn--secundario btn--sm" type="button" data-codigo="correo"${u.email_verificado ? "" : " disabled"}>Código por correo</button>` : ""}
         ${yo.sms ? `<button class="btn btn--secundario btn--sm" type="button" data-codigo="sms"${u.telefono_verificado ? "" : " disabled"}>Código por SMS</button>` : ""}
       </div>
-      ${!u.email_verificado || (yo.sms && !u.telefono_verificado) ? '<span class="campo__ayuda">Solo se puede usar un correo o teléfono verificado (arriba, en «Correo y teléfono»).</span>' : ""}` : ""}`;
+      ${(yo.correo && !u.email_verificado) || (yo.sms && !u.telefono_verificado) ? '<span class="campo__ayuda">Solo se puede usar un correo o teléfono verificado (arriba, en «Correo y teléfono»).</span>' : ""}` : ""}`;
   const repintar = async () => { const nuevo = await Sesion.yo(true); pintarContacto(nuevo); pintarDosPasos(nuevo); };
   caja.querySelectorAll("[data-codigo]").forEach(b => b.addEventListener("click", async () => {
     try { await API.post("auth.php", { metodo: b.dataset.codigo }, { accion: "segundo_factor" }); avisar("Listo: al entrar te pediremos un código."); repintar(); }
