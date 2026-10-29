@@ -372,6 +372,37 @@ button.chip:hover, a.chip:hover { border-color: var(--sec); color: var(--fg); }
 /* Cargando */
 .cargando { font: 400 var(--t-xs)/1.4 var(--f-tecnica); letter-spacing: .12em; text-transform: uppercase; color: var(--fg-3); }
 
+/* Pantallas esqueleto (util.js · Esqueleto): siluetas con la forma del contenido que viene en camino.
+   --w ajusta el ancho de cada barra; con prefers-reduced-motion no hay brillo, solo el bloque. */
+.esqueleto {
+  display: block; position: relative; overflow: hidden; flex: none; width: var(--w, 100%); max-width: 100%;
+  border-radius: var(--radio-s); background: color-mix(in srgb, var(--fg) 9%, var(--superficie));
+}
+.esqueleto::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--fg) 8%, transparent), transparent);
+  animation: esqueleto-brillo 1.4s var(--ease-precisa) infinite;
+}
+@keyframes esqueleto-brillo { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .esqueleto::after { display: none; } }
+.esqueleto--rotulo { height: .75rem; --w: 5.5rem; }
+.esqueleto--linea { height: 1rem; }
+.esqueleto--titulo { height: 1.6rem; --w: 75%; }
+.esqueleto--simbolo { height: 2.2rem; --w: 4.5rem; }
+.esqueleto--chip { height: 1.75rem; --w: 5rem; }
+.esqueleto--boton { height: 36px; --w: 5.5rem; }
+.esqueleto--icono { height: 24px; --w: 24px; }
+.esqueleto--valor { height: 2rem; --w: 3.5rem; }
+.esqueleto--hero { height: clamp(2.2rem, 1.3rem + 4.4vw, 4.8rem); --w: min(36rem, 85%); }
+.esqueleto--cota { height: 1px; }
+.esqueleto-texto { display: flex; flex-direction: column; gap: var(--e-2); }
+.pieza--esqueleto { pointer-events: none; }
+.pieza--esqueleto .pieza__datos { gap: var(--e-4); }
+.pieza--esqueleto .pieza__pie { min-height: 44px; }
+.esqueleto-tabla { display: flex; flex-direction: column; border: 1px solid var(--línea); border-radius: var(--radio-m); background: var(--superficie); }
+.esqueleto-tabla > div { display: grid; grid-template-columns: 2fr 3fr 1fr 1fr; gap: var(--e-4); align-items: center; padding: var(--e-3) var(--e-4); min-height: 48px; border-bottom: 1px solid var(--línea); }
+.esqueleto-tabla > div:last-child { border-bottom: 0; }
+
 /* Pregunta de examen: opciones como piezas pequeñas con letra mono. */
 .examen__lista { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--e-5); }
 .pregunta fieldset { border: 1px solid var(--línea); border-radius: var(--radio-m); background: var(--superficie); padding: var(--e-5); display: flex; flex-direction: column; gap: var(--e-4); min-width: 0; }

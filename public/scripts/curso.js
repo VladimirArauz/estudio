@@ -24,8 +24,9 @@ async function verMaterial() {
   panel.innerHTML = `
     <div class="herramientas"><h2 class="lamina__titulo">Material</h2>
       ${info.soy_profesor ? `<button class="btn btn--secundario" type="button" id="subirMaterial">${icono("subir", "icono--16")} Subir material</button>` : ""}</div>
-    <ul class="filas" id="listaMaterial"><li class="cargando">Cargando…</li></ul>`;
+    <ul class="filas" id="listaMaterial"></ul>`;
   const lista = document.getElementById("listaMaterial");
+  Esqueleto.poner(lista, Esqueleto.filas(3), "Cargando material…");
   const cargar = async () => {
     const { archivos } = await API.get("archivos.php", { seccion: "curso", curso_id: cursoId });
     lista.innerHTML = archivos.length ? archivos.map(Archivos.fila).join("") : `<li><span class="texto-2">El profesor todavía no sube material.</span></li>`;
@@ -396,6 +397,12 @@ function verEvaluar() {
 const VISTAS = { material: verMaterial, actividades: verActividades, examenes: verExamenes, alumnos: verAlumnos,
   resultados: verResultados, estadisticas: verEstadisticas, desempeno: verDesempeno, evaluar: verEvaluar };
 
+// Forma de cada vista mientras carga (Evaluar es un formulario corto: se queda con el texto).
+const esqueletoLista = () => `${Esqueleto.herramientas()}<ul class="filas">${Esqueleto.filas(4)}</ul>`;
+const ESQUELETOS = { material: esqueletoLista, actividades: esqueletoLista, examenes: esqueletoLista,
+  alumnos: () => Esqueleto.herramientas() + Esqueleto.tabla(6), resultados: () => Esqueleto.herramientas() + Esqueleto.tabla(6),
+  estadisticas: () => Esqueleto.kpis(4) + Esqueleto.tabla(4), desempeno: () => Esqueleto.kpis(3) + Esqueleto.tabla(3) };
+
 async function mostrar(id) {
   document.querySelectorAll("#pestanasCurso [data-vista]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.vista === id)));
   history.replaceState(null, "", `#${id}`);
@@ -403,11 +410,14 @@ async function mostrar(id) {
   const nuevo = panel.cloneNode(false);
   panel.replaceWith(nuevo);
   panel = nuevo;
-  nuevo.innerHTML = '<p class="cargando">Cargando…</p>';
+  const forma = ESQUELETOS[id]?.();
+  if (forma) Esqueleto.poner(nuevo, forma, "Cargando…");
+  else nuevo.innerHTML = '<p class="cargando">Cargando…</p>';
   try { await VISTAS[id](); } catch (err) { nuevo.innerHTML = `<div class="vacio"><p>${escapar(err.message)}</p></div>`; }
   Animar.registrar(nuevo);
 }
 
+Esqueleto.poner(document.getElementById("encabezado"), Esqueleto.encabezado(), "Cargando curso…");
 (async () => {
   yo = await Sesion.yo();
   try { info = await API.get("cursos.php", { id: cursoId }); }

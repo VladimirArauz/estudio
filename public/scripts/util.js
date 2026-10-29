@@ -141,3 +141,63 @@ const ESTADOS_ARCHIVO = {
   listo: { texto: "Listo", clase: "chip--ok" },
   error: { texto: "Error", clase: "chip--error" }
 };
+
+// Pantallas esqueleto: siluetas grises con la forma del contenido que viene en camino, en lugar de «Cargando…»
+// (la espera se siente más corta). El contenedor queda con aria-busy="true" y un texto solo para lectores de pantalla;
+// en cuanto la página reemplaza el esqueleto por los datos (o por un error), aria-busy se quita solo.
+const Esqueleto = (() => {
+  const b = (tipo, ancho = "") => `<span class="esqueleto esqueleto--${tipo}"${ancho ? ` style="--w: ${ancho}"` : ""}></span>`;
+  const repetir = (n, f) => Array.from({ length: n }, (_, i) => f(i)).join("");
+  const marca = 'data-esqueleto aria-hidden="true"';
+  return {
+    // Tarjeta (.pieza): materias (con símbolo), archivos y cursos.
+    piezas: (n = 3, { simbolo = false } = {}) => repetir(n, i => `
+      <article class="pieza pieza--esqueleto" ${marca}>
+        <div class="pieza__meta">${b("rotulo", "4rem")}${b("rotulo", "5rem")}</div>
+        ${simbolo ? b("simbolo") : `<div class="fila" style="gap: var(--e-2)">${b("icono")}${b("rotulo", "7rem")}</div>`}
+        ${b("titulo", ["80%", "65%", "72%"][i % 3])}
+        <div class="esqueleto-texto">${b("linea")}${b("linea", "85%")}</div>
+        <div class="pieza__datos">${b("rotulo", "6rem")}${b("rotulo", "4.5rem")}</div>
+        <div class="pieza__pie">${b("chip")}${b("rotulo", "3.5rem")}</div>
+      </article>`),
+    // Renglones de una lista .filas (material, actividades…).
+    filas: (n = 4) => repetir(n, i => `
+      <li ${marca}>${b("icono")}
+        <div class="filas__principal esqueleto-texto">${b("linea", ["55%", "70%", "45%", "62%"][i % 4])}${b("rotulo", "12rem")}</div>
+        ${b("chip")}${b("boton", "4.5rem")}
+      </li>`),
+    // Cabecera de página: rótulo, título grande, cota y una línea de descripción.
+    encabezado: () => `<div class="pila" style="gap: var(--e-3)" ${marca}>
+        ${b("rotulo", "14rem")}${b("hero")}${b("cota")}${b("linea", "min(30rem, 90%)")}</div>`,
+    // Indicadores (.kpis) del panel y de las estadísticas.
+    kpis: (n = 4) => `<div class="kpis" ${marca}>${repetir(n, () => `
+        <div class="kpi">${b("rotulo", "6rem")}${b("valor")}${b("rotulo", "8rem")}</div>`)}</div>`,
+    tabla: (n = 6) => `<div class="esqueleto-tabla" ${marca}>${repetir(n, i => `
+        <div>${b("linea", "80%")}${b("linea", ["90%", "70%", "60%"][i % 3])}${b("rotulo", "4rem")}${b("chip", "4rem")}</div>`)}</div>`,
+    // Barra de herramientas (título + botón o filtros) sobre una lista o tabla.
+    herramientas: () => `<div class="herramientas" ${marca}>${b("titulo", "12rem")}${b("boton", "9rem")}</div>`,
+    // Texto de un documento (vista generada de un archivo).
+    documento: () => `<div class="pila" style="max-width: var(--ancho-lectura)" ${marca}>
+        ${b("titulo", "50%")}<div class="esqueleto-texto">${b("linea")}${b("linea")}${b("linea", "92%")}${b("linea", "60%")}</div>
+        <div class="esqueleto-texto">${b("linea")}${b("linea", "96%")}${b("linea", "80%")}</div></div>`,
+    // Cuenta en el índice lateral.
+    cuenta: () => `<div class="pila" style="gap: var(--e-2)" ${marca}>${b("rotulo", "7rem")}${b("linea", "9rem")}${b("linea", "11rem")}${b("linea", "8rem")}</div>`,
+
+    // Pone el esqueleto en la caja (o lo agrega al final) y marca la caja como ocupada.
+    poner(caja, html, texto = "Cargando…", { agregar = false } = {}) {
+      if (!caja) return;
+      const contenido = `${html}<span class="sr-only" data-esqueleto>${escapar(texto)}</span>`;
+      if (agregar) caja.insertAdjacentHTML("beforeend", contenido); else caja.innerHTML = contenido;
+      caja.setAttribute("aria-busy", "true");
+      const vigia = new MutationObserver(() => {
+        if (!caja.querySelector("[data-esqueleto]")) { caja.removeAttribute("aria-busy"); vigia.disconnect(); }
+      });
+      vigia.observe(caja, { childList: true, subtree: true });
+    },
+    // Quita el esqueleto cuando el contenido se agregó junto a él (en lugar de reemplazarlo).
+    quitar(caja) {
+      caja?.querySelectorAll("[data-esqueleto]").forEach(e => e.remove());
+    }
+  };
+})();
+

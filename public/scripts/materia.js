@@ -47,6 +47,7 @@ function mostrarTipo(tipoId) {
 // ───── Cursos ─────
 async function cargarCursos() {
   const lista = document.getElementById("listaCursos");
+  if (!lista.children.length) Esqueleto.poner(lista, Esqueleto.piezas(2), "Cargando cursos…");
   let datos;
   try {
     datos = await API.get("cursos.php", { materia_id: materia.id });
@@ -133,7 +134,7 @@ function iniciar() {
     <h1 class="cabecera-pagina__titulo">${escapar(materia.nombre)}</h1>
     ${cota(materia.archivos, "archivos de apoyo")}
     ${materia.descripcion ? `<p class="lamina__lead">${escapar(materia.descripcion)}</p>` : ""}`);
-  document.querySelector("#encabezado .cargando").remove();
+  Esqueleto.quitar(document.getElementById("encabezado"));
   Animar.registrar();
 
   document.getElementById("listaAsesores").innerHTML = materia.asesores.length
@@ -162,9 +163,11 @@ function iniciar() {
 
   const inicial = { "#material": "vistaMaterial", "#cursos": "vistaCursos" }[location.hash] || "vistaAsesores";
   mostrarVista(inicial);
+  Esqueleto.poner(listaMaterial, Esqueleto.filas(3), "Cargando material…");
   cargarArchivos();
 }
 
+Esqueleto.poner(document.getElementById("encabezado"), Esqueleto.encabezado(), "Cargando materia…", { agregar: true });
 (async () => {
   yo = await Sesion.yo();
   try {

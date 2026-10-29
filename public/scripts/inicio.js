@@ -7,6 +7,9 @@ const NOMBRES_SECCION = { apuntes: "apuntes", tareas: "tareas", examenes: "exám
 const piezasEstudio = document.getElementById("piezasEstudio");
 const filtroMateria = document.getElementById("filtroMateria");
 const tarjetas = document.getElementById("tarjetas");
+const esqueletoEstudio = () => Esqueleto.poner(piezasEstudio, Esqueleto.piezas(3), "Cargando material…");
+esqueletoEstudio();
+Esqueleto.poner(tarjetas, Esqueleto.piezas(6, { simbolo: true }), "Cargando materias…");
 
 // ───── Apoyo: una pieza por materia ─────
 function agregarMateria(materia, n) {
@@ -69,9 +72,10 @@ document.getElementById("pestanasEstudio").addEventListener("click", e => {
   document.querySelectorAll("#pestanasEstudio [data-seccion]").forEach(p =>
     p.setAttribute("aria-selected", String(p === pestana)));
   document.getElementById("subirEstudio").textContent = `Subir ${{ apuntes: "apunte", tareas: "tarea", examenes: "examen" }[seccionActual]}`;
+  esqueletoEstudio();
   cargarEstudio();
 });
-filtroMateria.addEventListener("change", cargarEstudio);
+filtroMateria.addEventListener("change", () => { esqueletoEstudio(); cargarEstudio(); });
 Archivos.activarBorrado(piezasEstudio, cargarEstudio);
 
 document.getElementById("subirEstudio").textContent = "Subir apunte";

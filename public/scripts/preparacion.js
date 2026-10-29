@@ -60,6 +60,7 @@ document.getElementById("otraVariante").addEventListener("click", () => { varian
 
 async function cargarDesempeno() {
   const caja = document.getElementById("contenidoDesempeno");
+  if (!caja.children.length) Esqueleto.poner(caja, Esqueleto.kpis(4) + Esqueleto.tabla(3), "Cargando tu desempeño…");
   const yo = await Sesion.yo();
   if (!yo.usuario) {
     caja.innerHTML = `<div class="vacio"><p>Como invitado puedes practicar todo lo que quieras, pero tus resultados no se guardan.</p>

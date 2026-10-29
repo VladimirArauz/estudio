@@ -2,6 +2,7 @@
 
 const ESTADOS_POSTULACION = { pendiente: "chip--aviso", aprobada: "chip--ok", rechazada: "chip--error" };
 
+Esqueleto.poner(document.getElementById("listaCursos"), Esqueleto.piezas(3), "Cargando cursos…");
 (async () => {
   const yo = await Sesion.yo();
   if (!yo.usuario) { location.href = "login.html?volver=cursos.html"; return; }

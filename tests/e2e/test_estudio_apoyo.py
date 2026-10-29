@@ -103,7 +103,8 @@ def test_vista_de_cada_tipo_de_archivo(pagina, nuevo_usuario):
         ir(pagina, f"ver.html?id={ids[titulo]}")
         expect(pagina.locator("h1")).to_contain_text(titulo)
         vista = pagina.locator("#vista")
-        expect(vista.locator(".cargando")).to_have_count(0)
+        expect(vista.locator("[data-esqueleto]")).to_have_count(0)
+        expect(vista).not_to_have_attribute("aria-busy", "true")
         if texto:
             expect(vista).to_contain_text(texto)
         if titulo.startswith("Foto"):

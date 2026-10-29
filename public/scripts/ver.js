@@ -12,6 +12,8 @@ const LAMINA_DE = {
 const id = Number(parametro("id"));
 const encabezado = document.getElementById("encabezado");
 const vista = document.getElementById("vista");
+Esqueleto.poner(encabezado, Esqueleto.encabezado(), "Cargando archivo…", { agregar: true });
+Esqueleto.poner(vista, Esqueleto.documento(), "Cargando vista…");
 
 function pintarEncabezado(a) {
   const [activa, miga, enlace, sec] = LAMINA_DE[a.seccion] || LAMINA_DE.apuntes;
@@ -77,6 +79,7 @@ async function cargar() {
   } catch (err) {
     encabezado.innerHTML = `<h1 class="cabecera-pagina__titulo">Archivo no encontrado</h1>
       <p>Puede que se haya eliminado o que no tengas permiso para verlo. <a href="index.html">Volver al inicio</a></p>`;
+    vista.innerHTML = "";
     return;
   }
   pintarEncabezado(a);

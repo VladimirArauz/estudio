@@ -318,6 +318,11 @@ async function logs() {
 const VISTAS = { resumen, usuarios, materias, contenido, postulaciones, cursos, examenes, guias, analitica, logs };
 let actual = "resumen";
 
+// Resumen y analítica abren con indicadores; las demás secciones son filtros + tabla.
+const esqueletoPanel = id => ["resumen", "analitica"].includes(id)
+  ? Esqueleto.kpis(id === "resumen" ? 6 : 4) + Esqueleto.tabla(4)
+  : Esqueleto.herramientas() + Esqueleto.tabla(8);
+
 async function mostrar(id, nuevosFiltros) {
   actual = id;
   if (nuevosFiltros) filtros = nuevosFiltros;
@@ -327,7 +332,7 @@ async function mostrar(id, nuevosFiltros) {
   const nuevo = panel.cloneNode(false); // suelta los manejadores de la vista anterior
   panel.replaceWith(nuevo);
   panel = nuevo;
-  panel.innerHTML = '<p class="cargando">Cargando…</p>';
+  Esqueleto.poner(panel, esqueletoPanel(id), "Cargando…");
   try { await VISTAS[id](); } catch (err) {
     panel.innerHTML = `<div class="vacio"><p>${escapar(err.message)}</p>
       ${err.datos?.code === "NECESITA_2FA" ? '<p><a class="btn btn--primario" href="login.html">Activar en «Mi cuenta»</a></p>' : ""}</div>`;
@@ -349,6 +354,7 @@ async function mostrar(id, nuevosFiltros) {
   });
 }
 
+Esqueleto.poner(panel, esqueletoPanel("resumen"), "Cargando panel…");
 (async () => {
   const yo = await Sesion.yo();
   if (yo.rol !== "admin") {

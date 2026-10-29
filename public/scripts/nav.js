@@ -38,7 +38,7 @@ const LAMINAS = [
         <ul class="nav__lista">${items}</ul>
       </div>
       <hr class="nav__sep">
-      <div class="nav__cuenta" id="navCuenta"><p class="cargando">Cargando sesión…</p></div>
+      <div class="nav__cuenta" id="navCuenta"></div>
       <div class="nav__pie">
         <div class="tema">
           <span>Tema</span>
@@ -146,6 +146,7 @@ const LAMINAS = [
 // Cuenta (iniciar sesión o datos del usuario).
 (async function cuentaNav() {
   const caja = document.getElementById("navCuenta");
+  Esqueleto.poner(caja, Esqueleto.cuenta(), "Cargando sesión…");
   const yo = await Sesion.aplicar();
   const ROLES = { admin: "Admin", profesor: "Profesor", alumno: "Alumno", invitado: "Invitado" };
   if (!yo.usuario) {

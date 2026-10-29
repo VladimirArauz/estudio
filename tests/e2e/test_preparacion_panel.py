@@ -61,7 +61,8 @@ def test_panel_secciones_y_buscador(pagina, nuevo_usuario):
     for s in SECCIONES:
         pagina.click(f'#pestanasPanel [data-vista="{s}"]')
         expect(pagina.locator(f'#pestanasPanel [data-vista="{s}"]')).to_have_attribute("aria-selected", "true")
-        expect(pagina.locator("#panelAdmin .cargando")).to_have_count(0)
+        expect(pagina.locator("#panelAdmin [data-esqueleto]")).to_have_count(0)
+        expect(pagina.locator("#panelAdmin")).not_to_have_attribute("aria-busy", "true")
         expect(pagina.locator("#panelAdmin")).not_to_contain_text("Ocurrió un error")
 
     # Regresión: un clic dentro de la sección no recarga ni cambia la URL; escribir conserva el foco y el texto.
