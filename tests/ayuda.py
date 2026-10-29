@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import struct
 import subprocess
 import time
@@ -32,6 +33,22 @@ def preparar(*args: str):
 
 def sql(consulta: str) -> list[dict]:
     return preparar("sql", consulta)
+
+
+def buzon() -> list[dict]:
+    """Mensajes «enviados» en el entorno de pruebas (mensajes.simulado escribe en storage-pruebas/buzon.jsonl)."""
+    archivo = RAIZ / "storage-pruebas" / "buzon.jsonl"
+    if not archivo.exists():
+        return []
+    return [json.loads(l) for l in archivo.read_text(encoding="utf-8").splitlines() if l.strip()]
+
+
+def ultimo_codigo(destino: str) -> str:
+    """Código de 6 dígitos del último mensaje enviado a ese correo o teléfono."""
+    for m in reversed(buzon()):
+        if m["destino"] == destino:
+            return re.search(r"\b(\d{6})\b", m["texto"]).group(1)
+    raise AssertionError(f"No hay mensajes para {destino}")
 
 
 def totp(secreto: str, desfase: int = 0) -> str:

@@ -5,6 +5,7 @@ require_once dirname(__DIR__, 2) . '/src/archivos.php';
 
 exigirPost();
 $u = requiereRol('alumno', 'profesor', 'admin');
+requiereVerificado($u);
 limitar('subir:' . $u['id'], 60, 3600, 'Subiste demasiados archivos en la última hora. Espera un poco.');
 
 $f = $_FILES['archivo'] ?? null;

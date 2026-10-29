@@ -3,6 +3,8 @@
 require_once dirname(__DIR__, 2) . '/src/comun.php';
 require_once dirname(__DIR__, 2) . '/src/contrasenas.php';
 require_once dirname(__DIR__, 2) . '/src/totp.php';
+require_once dirname(__DIR__, 2) . '/src/mensajes.php';
+require_once dirname(__DIR__, 2) . '/src/codigos.php';
 
 const VENTANA_LOGIN = 900; // 15 min
 // password_verify corre siempre (exista o no el correo) para que el tiempo de respuesta no delate cuentas.
@@ -13,7 +15,13 @@ switch (accion()) {
     case 'yo':
         $u = usuario();
         responder([
-            'usuario' => $u ? ['id' => $u['id'], 'nombre' => $u['nombre'], 'email' => $u['email'], 'totp' => $u['totp_activo']] : null,
+            'usuario' => $u ? [
+                'id' => $u['id'], 'nombre' => $u['nombre'], 'email' => $u['email'], 'totp' => $u['totp_activo'],
+                'telefono' => enmascarar('sms', $u['telefono'] ?? null),
+                'email_verificado' => $u['email_verificado'] ?? false, 'telefono_verificado' => $u['telefono_verificado'] ?? false,
+                'requiere_verificar' => $u['requiere_verificar'] ?? false, 'segundo_factor' => $u['segundo_factor'] ?? null,
+            ] : null,
+            'sms' => smsDisponible(),
             'rol' => rol(),
             'csrf' => $_SESSION['csrf'],
             'pendiente_2fa' => !$u && !empty($_SESSION['pendiente_2fa']),
@@ -153,6 +161,60 @@ switch (accion()) {
         olvidarUsuarioEnSesion();
         registrar('2fa_desactivar', 'usuario', $u['id']);
         responder(['ok' => true]);
+
+    case 'codigo_enviar':
+        // Manda un código para verificar el correo o el teléfono de la cuenta.
+        exigirPost();
+        $u = requiereRol('admin', 'profesor', 'alumno');
+        $proposito = (string)(entrada()['proposito'] ?? '');
+        if ($proposito === 'verificar_correo') {
+            if ($u['email_verificado']) fallar('Tu correo ya está verificado.', 409);
+            responder(['ok' => true] + emitirCodigo($u['id'], $proposito, 'correo', $u['email']));
+        }
+        if ($proposito === 'verificar_telefono') {
+            if (!$u['telefono']) fallar('Primero agrega tu teléfono.', 409);
+            if ($u['telefono_verificado']) fallar('Tu teléfono ya está verificado.', 409);
+            if (!smsDisponible()) fallar('El envío por SMS no está disponible por ahora. Verifica tu correo.', 503);
+            responder(['ok' => true] + emitirCodigo($u['id'], $proposito, 'sms', $u['telefono']));
+        }
+        fallar('Propósito no válido.', 422);
+
+    case 'codigo_verificar':
+        exigirPost();
+        $u = requiereRol('admin', 'profesor', 'alumno');
+        $d = entrada();
+        $proposito = (string)($d['proposito'] ?? '');
+        if (!in_array($proposito, ['verificar_correo', 'verificar_telefono'], true)) fallar('Propósito no válido.', 422);
+        limitar('codigo-verificar:' . $u['id'], 15, 900, 'Demasiados códigos incorrectos. Espera 15 minutos.');
+        $f = verificarCodigo($u['id'], $proposito, (string)($d['codigo'] ?? ''));
+        // El código vale solo para el contacto al que se mandó (si cambió el teléfono después, ya no sirve).
+        $actual = $proposito === 'verificar_correo' ? $u['email'] : $u['telefono'];
+        if (!$f || !hash_equals((string)$actual, $f['destino'])) fallar('El código no es correcto o ya caducó. Pide uno nuevo si hace falta.', 422);
+        ejecutar($proposito === 'verificar_correo'
+            ? 'UPDATE usuarios SET email_verificado = NOW() WHERE id = ?'
+            : 'UPDATE usuarios SET telefono_verificado = NOW() WHERE id = ?', [$u['id']]);
+        olvidarUsuarioEnSesion();
+        registrar($proposito === 'verificar_correo' ? 'correo_verificar' : 'telefono_verificar', 'usuario', $u['id']);
+        responder(['ok' => true]);
+
+    case 'telefono_guardar':
+        // Agregar el teléfono no pide nada; cambiarlo o quitarlo pide confirmar la contraseña.
+        // Al cambiarlo deja de estar verificado y, si se usaba para el segundo paso, este se apaga.
+        exigirPost();
+        $u = requiereRol('admin', 'profesor', 'alumno');
+        if ($u['telefono']) exigirReautenticacion();
+        $texto = trim((string)(entrada()['telefono'] ?? ''));
+        $telefono = null;
+        if ($texto !== '' && !($telefono = normalizarTelefono($texto))) {
+            fallar('Escribe tu teléfono a 10 dígitos (por ejemplo 55 1234 5678) o con el código de país (+1…).', 422);
+        }
+        if ($telefono === $u['telefono']) responder(['ok' => true]);
+        limitar('telefono-guardar:' . $u['id'], 10, 86400, 'Cambiaste tu teléfono demasiadas veces hoy.');
+        ejecutar("UPDATE usuarios SET telefono = ?, telefono_verificado = NULL,
+                  segundo_factor = IF(segundo_factor = 'sms', NULL, segundo_factor) WHERE id = ?", [$telefono, $u['id']]);
+        olvidarUsuarioEnSesion();
+        registrar($telefono ? 'telefono_guardar' : 'telefono_quitar', 'usuario', $u['id']);
+        responder(['ok' => true, 'telefono' => enmascarar('sms', $telefono)]);
 
     case 'salir':
         exigirPost();

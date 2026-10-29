@@ -185,6 +185,7 @@ $d = entrada();
 switch (accion()) {
     case 'postular':
         $u = requiereRol('profesor');
+        requiereVerificado($u);
         limitar('postular:' . $u['id'], 10, 86400);
         $materia = entero($d['materia_id'] ?? null) ?? fallar('Falta la materia.', 422);
         if (!valor('SELECT 1 FROM materias WHERE id = ?', [$materia])) fallar('La materia no existe.', 404);
@@ -216,6 +217,7 @@ switch (accion()) {
 
     case 'inscribir':
         $u = requiereRol('alumno');
+        requiereVerificado($u);
         $id = entero($d['curso_id'] ?? null) ?? fallar('Falta el curso.', 422);
         $c = curso($id);
         if ($c['estado'] !== 'activo') fallar('Este curso ya no recibe alumnos.', 409);

@@ -99,7 +99,8 @@ function usuario(): ?array {
     if ($guardado && $guardado['id'] === (int)$_SESSION['uid'] && $ahora - ($_SESSION['usuario_t'] ?? 0) < 60) {
         return $cache = $guardado;
     }
-    $st = db()->prepare('SELECT id, nombre, email, rol, estado, sesion_version, totp_activo FROM usuarios WHERE id = ?');
+    $st = db()->prepare('SELECT id, nombre, email, rol, estado, sesion_version, totp_activo, telefono, email_verificado IS NOT NULL email_verificado,
+                                telefono_verificado IS NOT NULL telefono_verificado, requiere_verificar, segundo_factor FROM usuarios WHERE id = ?');
     $st->execute([$_SESSION['uid']]);
     $u = $st->fetch();
     // La versión sube al cambiar o restablecer la contraseña y al suspender: cierra las demás sesiones.
@@ -108,7 +109,7 @@ function usuario(): ?array {
         return null;
     }
     $u['id'] = (int)$u['id'];
-    $u['totp_activo'] = (bool)$u['totp_activo'];
+    foreach (['totp_activo', 'email_verificado', 'telefono_verificado', 'requiere_verificar'] as $c) $u[$c] = (bool)$u[$c];
     unset($u['sesion_version']);
     if ($guardado && $guardado['rol'] !== $u['rol']) session_regenerate_id(true); // cambio de privilegios
     $_SESSION['usuario'] = $u;
@@ -124,15 +125,28 @@ function cerrarSesion(): void {
 
 // Límite de peticiones con ventana fija: falla con 429 si la clave pasó de $max en $segundos.
 function limitar(string $clave, int $max, int $segundos, string $mensaje = 'Demasiadas solicitudes. Espera unos minutos e intenta de nuevo.'): void {
+    if (excedeLimite($clave, $max, $segundos)) {
+        header('Retry-After: ' . $segundos);
+        fallar($mensaje, 429);
+    }
+}
+
+// Cuenta una petición más y dice si la clave ya pasó de $max (sin cortar la petición).
+function excedeLimite(string $clave, int $max, int $segundos): bool {
     $clave = mb_substr($clave, 0, 190);
     ejecutar('INSERT INTO limites (clave, inicio, conteo) VALUES (?, NOW(), 1)
               ON DUPLICATE KEY UPDATE conteo = IF(inicio < NOW() - INTERVAL ? SECOND, 1, conteo + 1),
                                       inicio = IF(inicio < NOW() - INTERVAL ? SECOND, NOW(), inicio)', [$clave, $segundos, $segundos]);
-    if ((int)valor('SELECT conteo FROM limites WHERE clave = ?', [$clave]) > $max) {
-        header('Retry-After: ' . $segundos);
-        fallar($mensaje, 429);
-    }
     if (random_int(1, 200) === 1) ejecutar('DELETE FROM limites WHERE inicio < NOW() - INTERVAL 1 DAY');
+    return (int)valor('SELECT conteo FROM limites WHERE clave = ?', [$clave]) > $max;
+}
+
+// Las cuentas nuevas deben verificar su correo o su teléfono antes de subir, postularse o inscribirse.
+// Las que ya existían antes de la verificación tienen requiere_verificar = 0 y no se bloquean.
+function requiereVerificado(array $u): void {
+    if (!empty($u['requiere_verificar']) && empty($u['email_verificado']) && empty($u['telefono_verificado'])) {
+        responder(['error' => 'Verifica tu correo o tu teléfono para continuar. Hazlo en «Mi cuenta».', 'code' => 'VERIFICAR'], 403);
+    }
 }
 
 // Acciones delicadas (roles, contraseñas ajenas, borrados de admin): piden confirmar la contraseña
