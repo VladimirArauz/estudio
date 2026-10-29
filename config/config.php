@@ -30,6 +30,18 @@ $CONFIG = array_replace_recursive([
         'cache_ttl' => 604800,   // 7 días
         'limite_diario' => 60,   // peticiones por usuario al día
     ],
+    'mensajes' => [
+        'simulado' => false,        // pruebas: no envía nada, escribe en <storage>/buzon.jsonl
+        'smtp' => [                 // buzón de IONOS (config.local.php)
+            'host' => 'smtp.ionos.mx',
+            'port' => 587,          // STARTTLS
+            'user' => '',
+            'pass' => '',
+            'de' => '',             // remitente; vacío = el mismo usuario
+            'de_nombre' => 'Bátiz hasta la muerte',
+        ],
+        'twilio' => ['sid' => '', 'token' => '', 'de' => ''],  // sin sid no se ofrece SMS
+    ],
     'subidas' => [
         'max_bytes' => 200 * 1024 * 1024,
         'dir' => dirname(__DIR__) . '/storage',
@@ -41,3 +53,5 @@ if ($ENTORNO === 'pruebas' && (int)$CONFIG['db']['port'] === 3307) {
     http_response_code(500);
     exit('El entorno de pruebas apunta al túnel de producción. Revisa config/config.pruebas.php.');
 }
+// Ni las pruebas deben mandar correos o SMS reales.
+if ($ENTORNO === 'pruebas') $CONFIG['mensajes']['simulado'] = true;
