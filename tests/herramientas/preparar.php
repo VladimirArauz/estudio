@@ -3,7 +3,7 @@
 //   ESTUDIO_ENTORNO=pruebas php tests/herramientas/preparar.php reiniciar
 //   ESTUDIO_ENTORNO=pruebas php tests/herramientas/preparar.php usuario <rol> <correo> <nombre> <contraseña> [2fa] [tel=+52…] [nuevo]
 //   … limites   (vacía los límites de peticiones)   · sql "SELECT …" (lectura para comprobar)
-//   … caducar <usuario_id>   (vence los códigos de verificación vigentes de esa cuenta)
+//   … caducar <usuario_id>   (vence los códigos de verificación de esa cuenta y quita la espera para pedir otro)
 // «nuevo» crea la cuenta como recién registrada (requiere_verificar = 1, sin contacto verificado).
 // Imprime JSON (con el secreto TOTP cuando se pide 2fa).
 if (PHP_SAPI !== 'cli') exit(1);
@@ -70,7 +70,8 @@ switch ($orden) {
         break;
 
     case 'caducar':
-        $st = db()->prepare('UPDATE codigos_verificacion SET expira = NOW() - INTERVAL 1 SECOND WHERE usuario_id = ? AND usado IS NULL');
+        // También los «envejece» 2 min para que no cuente la espera entre envíos.
+        $st = db()->prepare('UPDATE codigos_verificacion SET expira = LEAST(expira, NOW() - INTERVAL 1 SECOND), creado = creado - INTERVAL 2 MINUTE WHERE usuario_id = ?');
         $st->execute([(int)($argv[2] ?? 0)]);
         echo json_encode(['ok' => true, 'caducados' => $st->rowCount()]), "\n";
         break;

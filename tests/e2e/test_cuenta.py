@@ -90,3 +90,78 @@ def test_admin_activa_2fa_desde_mi_cuenta(pagina, nuevo_usuario):
     expect(pagina.locator("#dosPasos")).to_contain_text("Al entrar te pediremos un código")
     ir(pagina, "panel.html")
     expect(pagina.locator("#panelAdmin .kpis")).to_be_visible()
+
+
+# ───── Códigos por correo o SMS e input OTP ─────
+
+def test_registro_con_telefono_verifica_por_sms(pagina):
+    ir(pagina, "login.html#registro")
+    pagina.fill("#nombreRegistro", "Sofía Prueba")
+    pagina.fill("#emailRegistro", f"sofia{time.time_ns()}@pruebas.test")
+    pagina.fill("#telRegistro", "55 8765 4321")
+    pagina.fill("#passRegistro", CONTRASENA)
+    pagina.click("#formRegistro [type=submit]")
+    pagina.click("#cajaVerificar [data-p=verificar_telefono]")
+    expect(pagina.locator("#cajaVerificar")).to_contain_text("por SMS al •••• 4321")
+    escribir_codigo(pagina, "#codigoTelefono", ultimo_codigo("+525587654321"))
+    pagina.wait_for_url(re.compile(r".*/index\.html"))
+    ir(pagina, "login.html")
+    expect(pagina.locator("#contacto")).to_contain_text("•••• 4321")
+    expect(pagina.locator("#contacto .chip--ok")).to_have_count(1)
+
+
+def test_codigo_incorrecto_en_rojo_y_pegar_el_codigo(pagina, nuevo_usuario):
+    u = nuevo_usuario("alumno")
+    entrar_ui(pagina, u)
+    ir(pagina, "login.html")
+    pagina.click('#contacto [data-verificar="verificar_correo"]')
+    expect(pagina.locator("#contacto")).to_contain_text("Te mandamos un código")
+    codigo = ultimo_codigo(u["email"])
+    malo = f"{(int(codigo) + 1) % 1_000_000:06d}"
+    casillas = pagina.locator("#codigoCorreo .otp__casilla")
+    casillas.first.focus()
+    pagina.keyboard.type(malo)  # dígito por dígito: avanza solo
+    expect(pagina.locator("#contacto .otp--error")).to_be_visible()
+    expect(pagina.locator("#contacto .otp__estado")).to_contain_text("no es correcto")
+    expect(casillas.first).to_have_value("")  # se limpia sola
+    # Pegar el código completo en cualquier casilla lo reparte y lo envía.
+    casillas.nth(2).evaluate("""(el, codigo) => {
+        const datos = new DataTransfer(); datos.setData("text", codigo);
+        el.dispatchEvent(new ClipboardEvent("paste", { clipboardData: datos, bubbles: true, cancelable: true }));
+    }""", codigo)
+    expect(pagina.locator("#contacto .otp--ok")).to_be_visible()
+    expect(pagina.locator("#contacto")).to_contain_text("Verificado")
+
+
+def test_entrar_con_codigo_por_correo(pagina, nuevo_usuario, como):
+    u = nuevo_usuario("alumno")
+    c = como(u)
+    c.post("api/auth.php", {"proposito": "verificar_correo"}, "codigo_enviar")
+    c.post("api/auth.php", {"proposito": "verificar_correo", "codigo": ultimo_codigo(u["email"])}, "codigo_verificar")
+    c.post("api/auth.php", {"password": CONTRASENA}, "confirmar")
+    assert c.post("api/auth.php", {"metodo": "correo"}, "segundo_factor").ok
+    ir(pagina, "login.html")
+    pagina.fill("#emailEntrar", u["email"])
+    pagina.fill("#passEntrar", CONTRASENA)
+    pagina.click("#formEntrar [type=submit]")
+    expect(pagina.locator("#formCodigo")).to_contain_text("Te mandamos un código de 6 dígitos a")
+    escribir_codigo(pagina, "#codigoEntrar", ultimo_codigo(u["email"]))
+    pagina.wait_for_url(re.compile(r".*/index\.html"))
+
+
+def test_recuperar_contrasena(pagina, nuevo_usuario):
+    u = nuevo_usuario("alumno")
+    ir(pagina, "login.html")
+    pagina.fill("#emailEntrar", u["email"])
+    pagina.click("#olvide")
+    expect(pagina.locator("#emailRecuperar")).to_have_value(u["email"])
+    pagina.click("#formRecuperar [type=submit]")
+    expect(pagina.locator("#cajaRecuperar")).to_contain_text("Si hay una cuenta con ese correo")
+    pagina.wait_for_timeout(500)  # el envío ocurre después de responder
+    escribir_codigo(pagina, "#codigoRecuperar", ultimo_codigo(u["email"]))
+    pagina.fill("#passRecuperar", "frase-nueva-de-prueba-8")
+    pagina.click("#cajaRecuperar [type=submit]")
+    expect(pagina.locator("#formEntrar .form__mensaje--ok")).to_contain_text("tu contraseña cambió")
+    pagina.fill("#passEntrar", "frase-nueva-de-prueba-8")
+    pagina.click("#formEntrar [type=submit]")
+    pagina.wait_for_url(re.compile(r".*/index\.html"))

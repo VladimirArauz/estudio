@@ -23,6 +23,26 @@ Ver «Arranque rápido» en el README. Tras reiniciar la PC basta con `sudo /opt
 - Restaurar en producción (solo ante una pérdida real): `age -d -i <llave-privada> <archivo> | gunzip | mysql …`
   contra la BD de IONOS por el túnel.
 
+## Códigos de verificación (correo y SMS)
+Se mandan al registrarse (verificar el correo o el teléfono), al entrar si la cuenta eligió «código por correo/SMS»
+y en «¿Olvidaste tu contraseña?». Las credenciales van en `config/config.local.php` (fuera de git):
+
+```php
+'mensajes' => [
+    'smtp' => ['user' => 'no-responder@tu-dominio.mx', 'pass' => '…'],   // buzón de IONOS; host smtp.ionos.mx:587 por defecto
+    'twilio' => ['sid' => 'AC…', 'token' => '…', 'de' => '+1…'],         // opcional: sin sid no se ofrece SMS
+],
+```
+
+- **Correo**: crea un buzón en IONOS (p. ej. `no-responder@…`) y revisa que el dominio tenga SPF y DKIM activos
+  para que los correos no caigan en spam.
+- **SMS** (opcional): cuenta de Twilio con un número que pueda mandar a México. **Cada SMS cuesta**; por eso hay
+  tope de 3 por hora y 10 por día por cuenta. La cuenta de prueba de Twilio solo manda a números verificados.
+- Probar la configuración: `/opt/lampp/bin/php bin/probar-mensaje.php correo tu@correo.com` (o `sms +5255…`).
+- Envíos fallidos: quedan en la tabla `logs` con acción `envio_fallido` (sin el código) y en el log de PHP
+  (`[estudio] Envío por … falló`). Nunca se registra el texto del mensaje.
+- En el entorno de pruebas no sale nada: los mensajes se escriben en `storage-pruebas/buzon.jsonl`.
+
 ## Logs
 `/etc/logrotate.d/estudio` rota cada semana los logs de Apache (`/opt/lampp/logs`) y de PHP
 (`/var/log/php-xampp-error.log`) y guarda 8 semanas.

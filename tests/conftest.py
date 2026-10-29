@@ -23,12 +23,14 @@ def sin_limites():
 
 @pytest.fixture
 def nuevo_usuario():
-    """Fábrica: nuevo_usuario("alumno") / nuevo_usuario("admin", totp=True)."""
-    def crear(rol: str = "alumno", totp: bool = False, nombre: str | None = None) -> dict:
+    """Fábrica: nuevo_usuario("alumno") / nuevo_usuario("admin", totp=True) /
+    nuevo_usuario("alumno", telefono="+525512345678", nuevo=True) (recién registrada, sin verificar)."""
+    def crear(rol: str = "alumno", totp: bool = False, nombre: str | None = None, telefono: str | None = None, nuevo: bool = False) -> dict:
         email = f"{rol}-{uuid.uuid4().hex[:10]}@pruebas.test"
         nombre = nombre or f"Persona {rol.title()} {uuid.uuid4().hex[:4]}"
-        d = preparar("usuario", rol, email, nombre, CONTRASENA, *(["2fa"] if totp else []))
-        return {**d, "rol": rol, "nombre": nombre, "password": CONTRASENA}
+        extras = (["2fa"] if totp else []) + ([f"tel={telefono}"] if telefono else []) + (["nuevo"] if nuevo else [])
+        d = preparar("usuario", rol, email, nombre, CONTRASENA, *extras)
+        return {**d, "rol": rol, "nombre": nombre, "password": CONTRASENA, "telefono": telefono}
     return crear
 
 
