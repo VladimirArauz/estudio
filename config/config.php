@@ -30,6 +30,9 @@ $CONFIG = array_replace_recursive([
         'cache_ttl' => 604800,   // 7 días
         'limite_diario' => 60,   // peticiones por usuario al día
     ],
+    'sitio' => [
+        'url' => '',                // dirección pública (https://…/estudio); con ella bin/vista-previa.php pone og:url y la imagen absoluta
+    ],
     'mensajes' => [
         'simulado' => false,        // pruebas: no envía nada, escribe en <storage>/buzon.jsonl
         'smtp' => [                 // Gmail con contraseña de aplicación (user y pass en config.local.php)

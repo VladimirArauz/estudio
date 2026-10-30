@@ -39,6 +39,7 @@ Después de reiniciar la PC solo hace falta el paso 1: los servicios `estudio-tu
 | `/opt/lampp/bin/php bin/migrar.php` | Crear o actualizar las tablas (`sql/*.sql`) |
 | `/opt/lampp/bin/php bin/crear-admin.php correo "Nombre" [contraseña]` | Crear o restablecer un admin |
 | `/opt/lampp/bin/php bin/probar-mensaje.php destino@correo.com` | Probar el envío de códigos por correo |
+| `/opt/lampp/bin/php bin/vista-previa.php` | Actualizar la vista previa al compartir enlaces (ver `docs/operacion.md`) |
 
 ## Base de datos (IONOS)
 

@@ -46,6 +46,18 @@ y en «¿Olvidaste tu contraseña?». Las credenciales van en `config/config.loc
 - **Sin credenciales de SMTP** el sitio sigue funcionando como antes: no se pide verificar la cuenta,
   no aparece «¿Olvidaste tu contraseña?» ni el código por correo. Al poner `user` y `pass` se activa todo solo.
 
+## Vista previa al compartir (Open Graph)
+Lo que muestran WhatsApp y las redes al mandar un enlace: título, descripción e imagen de 1200×630
+(`public/img/vista-previa.png`). Las etiquetas viven en cada `public/*.html` entre `<!-- vista-previa -->` y
+`<!-- /vista-previa -->`; no las edites a mano.
+
+- Textos de cada página: `bin/vista-previa.php` (`PAGINAS`). Después de cambiarlos: `/opt/lampp/bin/php bin/vista-previa.php`.
+- **Cuando haya dominio**: pon la dirección pública en `config/config.php` → `'sitio' => ['url' => 'https://…/estudio']`
+  y corre `/opt/lampp/bin/php bin/vista-previa.php`. Sin ella falta `og:url` y la imagen no es absoluta, y WhatsApp no la muestra.
+- Regenerar la imagen: `tests/.venv/bin/python bin/vista-previa-imagen.py` (la dibuja Chrome con las fuentes del sitio).
+- Probar: el depurador de Meta (developers.facebook.com/tools/debug) muestra la vista previa y limpia su caché.
+  WhatsApp guarda la vista previa de un enlace un buen rato: para ver un cambio, prueba con `?v=2` al final.
+
 ## Logs
 `/etc/logrotate.d/estudio` rota cada semana los logs de Apache (`/opt/lampp/logs`) y de PHP
 (`/var/log/php-xampp-error.log`) y guarda 8 semanas.
