@@ -54,7 +54,7 @@ async function verActividades() {
             <div class="campo"><label for="actPuntos">Puntos</label><input type="number" id="actPuntos" min="1" max="1000" value="10"></div>
           </div>
           <p class="form__mensaje form__mensaje--error" role="alert"></p>
-          <div class="form__acciones"><button class="btn btn--secundario" type="submit">Crear actividad</button></div>
+          <div class="form__acciones"><button class="btn btn--primario" type="submit">Crear actividad</button></div>
         </form></div></details>` : ""}
     <div class="pila" id="listaActividades">${actividades.length ? "" : '<div class="vacio"><p>Todavía no hay actividades.</p></div>'}</div>`;
 
@@ -227,10 +227,8 @@ async function verExamenes() {
   document.getElementById("formGenerarExamen").addEventListener("submit", async e => {
     e.preventDefault();
     const boton = e.target.querySelector('[type="submit"]');
-    boton.disabled = true;
-    const r = await Examen.generar({ modo: "materia", materia: info.curso.materia, tema: document.getElementById("exTema").value.trim(),
-      cantidad: Number(document.getElementById("exCantidad").value), nivel: document.getElementById("exNivel").value, variante: Date.now() % 20 + 1 });
-    boton.disabled = false;
+    const r = await ocupado(boton, () => Examen.generar({ modo: "materia", materia: info.curso.materia, tema: document.getElementById("exTema").value.trim(),
+      cantidad: Number(document.getElementById("exCantidad").value), nivel: document.getElementById("exNivel").value, variante: Date.now() % 20 + 1 }));
     if (r.aviso) avisar(`Sin IA: ${r.aviso}`, "error");
     origen = r.origen === "ia" ? "ia" : origen;
     borrador = borrador.concat(r.datos.preguntas || []);
@@ -376,7 +374,7 @@ function verEvaluar() {
       <fieldset class="campo" style="border: 0; padding: 0"><legend class="campo__etiqueta">El profesor · ${escapar(info.curso.profesor)}</legend>${entrada("ep")}</fieldset>
       <div class="campo"><label for="evComentario">Comentario (opcional)</label><textarea id="evComentario" maxlength="2000" placeholder="¿Qué te ayudó? ¿Qué mejorarías?"></textarea></div>
       <p class="form__mensaje form__mensaje--error" role="alert"></p>
-      <div class="form__acciones" style="justify-content: flex-start"><button class="btn btn--secundario" type="submit">Enviar evaluación</button></div>
+      <div class="form__acciones" style="justify-content: flex-start"><button class="btn btn--primario" type="submit">Enviar evaluación</button></div>
     </form>`;
   document.getElementById("formEvaluar").addEventListener("submit", async e => {
     e.preventDefault();

@@ -31,14 +31,13 @@ document.getElementById("modos").addEventListener("click", e => {
 
 async function generarExamen() {
   const boton = document.getElementById("botonGenerar");
-  boton.disabled = true;
   boton.textContent = "Generando…";
   const opciones = { modo, materia: modo === "simulacro" ? null : selMateria.value, tema: document.getElementById("tema").value.trim(),
     nivel: document.getElementById("nivel").value, variante };
   opciones.cantidad = { simulacro: 12, materia: 8, quiz: 5, ejercicios: 4, flashcards: 4 }[modo];
-  const r = await Examen.generar(opciones);
-  boton.disabled = false;
-  boton.textContent = "Generar examen";
+  let r;
+  try { r = await ocupado(boton, () => Examen.generar(opciones)); }
+  finally { boton.textContent = "Generar examen"; }
 
   const practica = document.getElementById("practica");
   practica.hidden = false;

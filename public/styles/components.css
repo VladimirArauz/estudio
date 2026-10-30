@@ -165,7 +165,14 @@
 .pieza__acciones { position: relative; z-index: 2; display: flex; gap: var(--e-2); }
 .pieza__simbolo { font: 800 2.4rem/.9 var(--f-display); color: var(--fg); letter-spacing: -.01em; }
 
-/* ───────────── 7.5 Botones ───────────── */
+/* ───────────── 7.5 Botones ─────────────
+   Cada variante tiene un propósito:
+   · primario   la acción principal: uno solo por vista o formulario (Iniciar sesión, Guardar, Generar).
+   · secundario las alternativas y acciones de fila (Cancelar, Ver, Editar).
+   · terciario  navegación en línea, con aspecto de enlace (¿Olvidaste tu contraseña?, Volver).
+   · peligro    solo para borrar, quitar o rechazar; siempre con confirmación.
+   · --sm para tablas y filas; --icono siempre con aria-label.
+   Estados: :hover, :active (presionado), :focus-visible, :disabled y aria-busy="true" (cargando; ver ocupado() en util.js). */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--e-2);
   min-height: 44px; padding: var(--e-2) var(--e-5); border-radius: var(--radio-m);
@@ -173,17 +180,31 @@
   transition: transform var(--d-micro), box-shadow var(--d-micro), border-color var(--d-micro), background-color var(--d-micro);
 }
 .btn:disabled, .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+.btn:focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; }
+.btn:active:not(:disabled) { transform: translate(1px, 1px); }
 .btn--primario { background: var(--acento); color: var(--acento-fg); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; box-shadow: 4px 4px 0 var(--sombra-dura); }
 .btn--primario:hover:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--sombra-dura); }
+.btn--primario:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--sombra-dura); }
+.btn--primario:focus-visible { outline-color: var(--fg); } /* que el foco no se confunda con el relleno */
 .btn--secundario { border-color: var(--línea-fuerte); }
 .btn--secundario:hover:not(:disabled) { border-color: var(--acento); }
+.btn--secundario:active:not(:disabled) { background: var(--superficie-2); }
 .btn--terciario { padding-inline: 0; color: var(--enlace); text-decoration: underline 1px; text-underline-offset: 3px; }
 .btn--terciario:hover { text-decoration-thickness: 2px; }
+.btn--terciario:active:not(:disabled) { transform: none; color: var(--fg); }
 .btn--peligro { border-color: var(--error); color: var(--error); }
 .btn--peligro:hover:not(:disabled) { background: color-mix(in srgb, var(--error) 12%, transparent); }
+.btn--peligro:active:not(:disabled) { background: color-mix(in srgb, var(--error) 22%, transparent); }
+.btn--peligro:focus-visible { outline-color: var(--error); }
 .btn--sm { min-height: 36px; padding: var(--e-1) var(--e-3); font-size: var(--t-sm); }
 .btn--terciario.btn--sm { padding-inline: 0; }
 .btn--icono { width: 44px; padding: 0; }
+/* Cargando: conserva el texto, gira un arco antes de él y no acepta otro clic (sin el gris de deshabilitado). */
+.btn[aria-busy="true"] { opacity: 1; cursor: progress; pointer-events: none; }
+.btn[aria-busy="true"]::before { content: ""; width: 1em; height: 1em; flex: none; border: 2px solid currentColor; border-right-color: transparent;
+  border-radius: 50%; animation: btn-gira .7s linear infinite; }
+.btn--icono[aria-busy="true"] > * { display: none; }
+@keyframes btn-gira { to { transform: rotate(1turn); } }
 .icono { width: 20px; height: 20px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: square; stroke-linejoin: miter; }
 .icono--16 { width: 16px; height: 16px; }
 

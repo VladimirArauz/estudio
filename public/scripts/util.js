@@ -122,6 +122,15 @@ function avisar(mensaje, tipo = "ok") {
   avisar.t = setTimeout(() => caja.dataset.visible = "false", 4000);
 }
 
+// Mientras corre la acción, el botón queda deshabilitado y con su estado de carga (aria-busy).
+// Al terminar, bien o mal, vuelve a la normalidad; los errores siguen su camino.
+async function ocupado(boton, trabajo) {
+  boton.disabled = true;
+  boton.setAttribute("aria-busy", "true");
+  try { return await trabajo(); }
+  finally { boton.disabled = false; boton.removeAttribute("aria-busy"); }
+}
+
 // Tipos de archivo: rótulo, icono y nombre de pestaña.
 const TIPOS_ARCHIVO = {
   pdf: { nombre: "PDF", icono: "documento", grupo: "documentos" },

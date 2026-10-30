@@ -90,12 +90,11 @@ async function cargarCursos() {
 document.getElementById("listaCursos").addEventListener("click", async e => {
   const boton = e.target.closest("[data-inscribir]");
   if (!boton) return;
-  boton.disabled = true;
   try {
-    await API.post("cursos.php", { curso_id: Number(boton.dataset.inscribir) }, { accion: "inscribir" });
+    await ocupado(boton, () => API.post("cursos.php", { curso_id: Number(boton.dataset.inscribir) }, { accion: "inscribir" }));
     avisar("Te inscribiste al curso.");
     location.href = `curso.html?id=${boton.dataset.inscribir}`;
-  } catch (err) { avisar(err.message, "error"); boton.disabled = false; }
+  } catch (err) { avisar(err.message, "error"); }
 });
 
 document.getElementById("accionesProfesor").addEventListener("click", e => {

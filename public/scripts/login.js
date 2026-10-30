@@ -32,18 +32,13 @@ async function enviar(form, accion, datos, reglas) {
   const error = form.querySelector(".form__mensaje");
   error.textContent = validar(form, reglas);
   if (error.textContent) return;
-  const boton = form.querySelector('[type="submit"]');
-  boton.disabled = true;
-  try {
-    const r = await API.post("auth.php", datos(), { accion });
-    API.olvidarToken();
-    if (r.paso === "2fa") return pedirCodigo(r);
-    if (r.paso === "verificar") return pedirVerificacion();
-    irDestino();
-  } catch (err) {
-    error.textContent = err.message;
-    boton.disabled = false;
-  }
+  let r;
+  try { r = await ocupado(form.querySelector('[type="submit"]'), () => API.post("auth.php", datos(), { accion })); }
+  catch (err) { error.textContent = err.message; return; }
+  API.olvidarToken();
+  if (r.paso === "2fa") return pedirCodigo(r);
+  if (r.paso === "verificar") return pedirVerificacion();
+  irDestino();
 }
 
 function irDestino() {

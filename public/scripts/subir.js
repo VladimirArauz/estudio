@@ -102,7 +102,7 @@ const Archivos = (() => {
         <p class="form__mensaje" role="status" aria-live="polite"></p>
         <div class="form__acciones">
           <button type="button" class="btn btn--secundario" data-cancelar>Cancelar</button>
-          <button type="submit" class="btn btn--secundario">${icono("subir", "icono--16")} Subir</button>
+          <button type="submit" class="btn btn--primario">${icono("subir", "icono--16")} Subir</button>
         </div>
       </form>`;
     document.body.append(dialogo);
@@ -121,6 +121,7 @@ const Archivos = (() => {
       }
       const boton = form.querySelector('[type="submit"]');
       boton.disabled = true;
+      boton.setAttribute("aria-busy", "true");
       const titulo = form.querySelector("#subirTitulo").value.trim();
       const materia = conMateria ? form.querySelector("#subirMateria").value : opciones.materia_id;
       let subidos = 0;
@@ -147,6 +148,7 @@ const Archivos = (() => {
         mensaje.className = "form__mensaje form__mensaje--error";
         mensaje.textContent = err.message;
         boton.disabled = false;
+        boton.removeAttribute("aria-busy");
         if (subidos) opciones.alTerminar && opciones.alTerminar();
       }
     });
