@@ -29,18 +29,22 @@ y en «¿Olvidaste tu contraseña?». Las credenciales van en `config/config.loc
 
 ```php
 'mensajes' => [
-    'smtp' => ['user' => 'no-responder@tu-dominio.mx', 'pass' => '…'],   // buzón de IONOS; host smtp.ionos.mx:587 por defecto
+    'smtp' => ['user' => 'tucorreo@gmail.com', 'pass' => '…'],   // contraseña de aplicación; smtp.gmail.com:587 por defecto
 ],
 ```
 
-- **Correo**: crea un buzón en IONOS (p. ej. `no-responder@…`) y revisa que el dominio tenga SPF y DKIM activos
-  para que los correos no caigan en spam.
+- **Gmail**: activa la verificación en dos pasos de la cuenta de Google y crea una **contraseña de aplicación**
+  en myaccount.google.com → Seguridad → Contraseñas de aplicaciones. Esa clave de 16 letras (sin espacios) va en `pass`;
+  la contraseña normal de Google no sirve para SMTP.
+- El remitente es la misma cuenta: deja `de` vacío (Gmail reescribe cualquier otro remitente). `de_nombre` sí se puede cambiar.
+- Límite de Gmail: unos **500 correos al día**. Si se llega al límite, los envíos fallan hasta el día siguiente
+  (quedan en `envio_fallido`). Los primeros correos pueden llegar a spam: márcalos como «No es spam».
 - Probar la configuración: `/opt/lampp/bin/php bin/probar-mensaje.php tu@correo.com`.
 - Envíos fallidos: quedan en la tabla `logs` con acción `envio_fallido` (sin el código) y en el log de PHP
   (`[estudio] Envío de correo falló`). Nunca se registra el texto del mensaje.
 - En el entorno de pruebas no sale nada: los correos se escriben en `storage-pruebas/buzon.jsonl`.
 - **Sin credenciales de SMTP** el sitio sigue funcionando como antes: no se pide verificar la cuenta,
-  no aparece «¿Olvidaste tu contraseña?» ni el código por correo. Al poner el buzón de SMTP se activa todo solo.
+  no aparece «¿Olvidaste tu contraseña?» ni el código por correo. Al poner `user` y `pass` se activa todo solo.
 
 ## Logs
 `/etc/logrotate.d/estudio` rota cada semana los logs de Apache (`/opt/lampp/logs`) y de PHP

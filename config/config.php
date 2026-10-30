@@ -32,12 +32,12 @@ $CONFIG = array_replace_recursive([
     ],
     'mensajes' => [
         'simulado' => false,        // pruebas: no envía nada, escribe en <storage>/buzon.jsonl
-        'smtp' => [                 // buzón de IONOS (config.local.php)
-            'host' => 'smtp.ionos.mx',
+        'smtp' => [                 // Gmail con contraseña de aplicación (user y pass en config.local.php)
+            'host' => 'smtp.gmail.com',
             'port' => 587,          // STARTTLS
             'user' => '',
             'pass' => '',
-            'de' => '',             // remitente; vacío = el mismo usuario
+            'de' => '',             // remitente; vacío = el mismo usuario (Gmail reescribe cualquier otro)
             'de_nombre' => 'Bátiz hasta la muerte',
         ],
     ],
