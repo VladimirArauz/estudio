@@ -1,5 +1,5 @@
 // Input de código de un solo uso: una casilla por dígito, avance automático, pegar el código completo
-// (o recibirlo del autocompletado de SMS), «pop» al escribir, rojo + sacudida + limpieza al fallar
+// (o recibirlo del autocompletado del sistema), «pop» al escribir, rojo + sacudida + limpieza al fallar
 // y brillo verde al acertar. Con prefers-reduced-motion solo cambia el color (base.css).
 //
 // const otp = OTP.montar(caja, { id: "codigoEntrar", etiqueta: "Código", alCompletar: async codigo => true | "mensaje de error" });
@@ -39,7 +39,7 @@ const OTP = (() => {
       void c.offsetWidth; // reinicia la animación aunque se escriba el mismo dígito
       c.classList.add("otp__casilla--pop");
     }
-    // Reparte dígitos desde la casilla i (sirve para escribir, pegar y el autocompletado de SMS).
+    // Reparte dígitos desde la casilla i (sirve para escribir, pegar y el autocompletado del sistema).
     function llenar(i, digitos) {
       for (const d of digitos) {
         if (i >= largo) break;

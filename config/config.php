@@ -40,7 +40,6 @@ $CONFIG = array_replace_recursive([
             'de' => '',             // remitente; vacío = el mismo usuario
             'de_nombre' => 'Bátiz hasta la muerte',
         ],
-        'twilio' => ['sid' => '', 'token' => '', 'de' => ''],  // sin sid no se ofrece SMS
     ],
     'subidas' => [
         'max_bytes' => 200 * 1024 * 1024,
@@ -53,5 +52,5 @@ if ($ENTORNO === 'pruebas' && (int)$CONFIG['db']['port'] === 3307) {
     http_response_code(500);
     exit('El entorno de pruebas apunta al túnel de producción. Revisa config/config.pruebas.php.');
 }
-// Ni las pruebas deben mandar correos o SMS reales.
+// Las pruebas no deben mandar correos reales.
 if ($ENTORNO === 'pruebas') $CONFIG['mensajes']['simulado'] = true;

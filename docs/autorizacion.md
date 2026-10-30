@@ -9,8 +9,7 @@ Las pruebas de `tests/seguridad/test_autorizacion.py` recorren esta tabla.
 |---|---|---|---|---|
 | `auth` yo / entrar / registrar / verificar_2fa | ✔ | ✔ | ✔ | ✔ |
 | `auth` cambiar_password · confirmar · totp_* · salir | — | ✔ | ✔ | ✔ (no puede desactivar su 2FA) |
-| `auth` codigo_enviar · codigo_verificar (verificar su correo o teléfono) | — | ✔ | ✔ | ✔ |
-| `auth` telefono_guardar | — | ✔ (cambiar o quitar 🔒) | ✔ (cambiar o quitar 🔒) | ✔ (cambiar o quitar 🔒) |
+| `auth` codigo_enviar · codigo_verificar (verificar su correo) | — | ✔ | ✔ | ✔ |
 | `materias` GET | ✔ | ✔ | ✔ | ✔ |
 | `materias` crear / editar | — | — | — | ✔ |
 | `materias` borrar | — | — | — | ✔ 🔒 |
@@ -40,8 +39,8 @@ Las pruebas de `tests/seguridad/test_autorizacion.py` recorren esta tabla.
 
 Reglas de datos que no dependen solo del rol:
 - Las cuentas creadas después de la verificación (`requiere_verificar = 1`) no pueden `subir`, `postular` ni `inscribir`
-  hasta verificar su correo o su teléfono (`requiereVerificado()`, responde 403 con `code: VERIFICAR`).
-- Un código de verificación vale solo para su cuenta, su propósito y el contacto al que se mandó; caduca a los 10 min,
+  hasta verificar su correo (`requiereVerificado()`, responde 403 con `code: VERIFICAR`).
+- Un código de verificación vale solo para su cuenta, su propósito y el correo al que se mandó; caduca a los 10 min,
   se usa una vez y acepta 5 intentos.
 - Una actividad, entrega o examen se valida siempre contra el curso indicado (un profesor no ve datos de otros cursos).
 - Los exámenes de curso se califican en el servidor; el alumno no recibe las respuestas antes de terminar y solo

@@ -14,6 +14,6 @@ make pruebas-e2e         # recorrido de cada sección en Chrome (Playwright)
 - `tests/herramientas/preparar.php` vacía la BD de pruebas, crea usuarios por rol y vacía los límites
   (se niega a correr fuera del entorno de pruebas).
 - Las pruebas de 2FA calculan el código TOTP en Python; algunas esperan al siguiente paso de 30 s.
-- Los códigos por correo o SMS no se envían: el entorno de pruebas los escribe en `storage-pruebas/buzon.jsonl`
+- Los códigos por correo no se envían: el entorno de pruebas los escribe en `storage-pruebas/buzon.jsonl`
   y `ayuda.ultimo_codigo(destino)` los lee. `preparar.php caducar <id>` vence los códigos de una cuenta.
 - Algunas pruebas esperan 61 s (la sesión relee al usuario de la BD cada 60 s).

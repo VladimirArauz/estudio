@@ -165,7 +165,7 @@ const LAMINAS = [
   caja.innerHTML = `
     <p class="rotulo">Cuenta · <b>${ROLES[yo.rol]}</b></p>
     <p class="nav__usuario">${escapar(yo.usuario.nombre)}</p>
-    ${yo.usuario.requiere_verificar && !yo.usuario.email_verificado && !yo.usuario.telefono_verificado && (yo.correo || yo.sms)
+    ${yo.usuario.requiere_verificar && !yo.usuario.email_verificado && yo.correo
       ? '<a class="chip chip--aviso" href="login.html" id="navVerificar">Verifica tu cuenta</a>' : ""}
     ${extras.map(([href, ic, texto], i) => `<a class="nav__item" style="--i:${4 + i}" href="${href}">${icono(ic, "icono--16")}<span class="nav__nombre">${texto}</span><span></span></a>`).join("")}
     <button class="btn btn--terciario btn--sm" type="button" id="cerrarSesion">${icono("salir", "icono--16")} Cerrar sesión</button>`;

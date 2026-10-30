@@ -44,7 +44,7 @@ def buzon() -> list[dict]:
 
 
 def ultimo_codigo(destino: str) -> str:
-    """Código de 6 dígitos del último mensaje enviado a ese correo o teléfono."""
+    """Código de 6 dígitos del último correo enviado a esa dirección."""
     for m in reversed(buzon()):
         if m["destino"] == destino:
             return re.search(r"\b(\d{6})\b", m["texto"]).group(1)

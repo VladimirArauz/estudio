@@ -1,12 +1,10 @@
-"""Códigos de verificación por correo o SMS: verificar el contacto, segundo paso al entrar y recuperar la contraseña."""
+"""Códigos de verificación por correo: verificar el correo, segundo paso al entrar y recuperar la contraseña."""
 from __future__ import annotations
 
 import re
 import time
 
 from ayuda import CONTRASENA, Cliente, buzon, preparar, sql, totp, ultimo_codigo
-
-TELEFONO = "+525512345678"
 
 
 def enviar(c: Cliente, proposito: str = "verificar_correo"):
@@ -25,7 +23,7 @@ def confirmar(c: Cliente):
     assert c.post("api/auth.php", {"password": CONTRASENA}, "confirmar").ok
 
 
-# ───── Verificar el correo o el teléfono ─────
+# ───── Verificar el correo ─────
 
 def test_codigo_verifica_el_correo_una_sola_vez(como, nuevo_usuario):
     u = nuevo_usuario("alumno", nuevo=True)
@@ -89,44 +87,30 @@ def test_reenviar_invalida_el_codigo_anterior(como, nuevo_usuario):
     assert verificar(c, nuevo).ok
 
 
-def test_limite_de_sms_por_cuenta(como, nuevo_usuario):
-    u = nuevo_usuario("alumno", telefono=TELEFONO)
+def test_limite_de_correos_por_cuenta(como, nuevo_usuario):
+    u = nuevo_usuario("alumno")
     c = como(u)
-    for _ in range(3):
-        assert enviar(c, "verificar_telefono").ok
+    for _ in range(5):
+        assert enviar(c).ok
         preparar("caducar", str(u["id"]))
-    r = enviar(c, "verificar_telefono")
+    r = enviar(c)
     assert r.status_code == 429 and "demasiados" in r.json()["error"]
 
 
-def test_codigo_solo_para_el_telefono_al_que_se_mando(como, nuevo_usuario):
-    u = nuevo_usuario("alumno", telefono=TELEFONO)
-    c = como(u)
-    enviar(c, "verificar_telefono")
-    codigo = ultimo_codigo(TELEFONO)
-    r = c.post("api/auth.php", {"telefono": "5587654321"}, "telefono_guardar")
-    assert r.status_code == 428, "cambiar el teléfono pide confirmar la contraseña"
-    confirmar(c)
-    assert c.post("api/auth.php", {"telefono": "5587654321"}, "telefono_guardar").ok
-    assert verificar(c, codigo, "verificar_telefono").status_code == 422
-    assert sql(f"SELECT telefono FROM usuarios WHERE id = {u['id']}")[0]["telefono"] == "+525587654321"
-
-
-def test_telefono_invalido(como, nuevo_usuario):
-    c = como(nuevo_usuario("alumno"))
-    for malo in ["123", "abcdefghij", "+0123", "55 1234 567"]:
-        assert c.post("api/auth.php", {"telefono": malo}, "telefono_guardar").status_code == 422, malo
-
-
-def test_registro_guarda_el_telefono_normalizado(cliente):
-    correo = f"tel{time.time_ns()}@pruebas.test"
-    r = cliente.post("api/auth.php", {"nombre": "Teo Prueba", "email": correo, "password": CONTRASENA, "telefono": "55 1234-5678"}, "registrar")
+def test_registro_pide_verificar_el_correo(cliente):
+    correo = f"nuevo{time.time_ns()}@pruebas.test"
+    r = cliente.post("api/auth.php", {"nombre": "Teo Prueba", "email": correo, "password": CONTRASENA}, "registrar")
     assert r.status_code == 201 and r.json()["paso"] == "verificar"
-    fila = sql(f"SELECT telefono, requiere_verificar FROM usuarios WHERE email = '{correo}'")[0]
-    assert fila == {"telefono": TELEFONO, "requiere_verificar": 1}
-    otro = Cliente()
-    r = otro.post("api/auth.php", {"nombre": "Teo Prueba", "email": f"x{correo}", "password": CONTRASENA, "telefono": "12"}, "registrar")
-    assert r.status_code == 422
+    assert sql(f"SELECT requiere_verificar FROM usuarios WHERE email = '{correo}'")[0] == {"requiere_verificar": 1}
+
+
+def test_sin_sms_ni_telefono(como, nuevo_usuario):
+    c = como(nuevo_usuario("alumno"))
+    assert "sms" not in c.yo() and "telefono" not in c.yo()["usuario"]
+    assert enviar(c, "verificar_telefono").status_code == 422
+    assert c.post("api/auth.php", {"telefono": "5512345678"}, "telefono_guardar").status_code == 404
+    confirmar(c)
+    assert c.post("api/auth.php", {"metodo": "sms"}, "segundo_factor").status_code == 422
 
 
 def test_cuenta_nueva_sin_verificar_no_sube_ni_se_postula(como, nuevo_usuario):
@@ -171,13 +155,6 @@ def test_segundo_paso_por_correo(como, nuevo_usuario):
     assert otro.post("api/auth.php", {"codigo": otro_codigo(codigo)}, "verificar_2fa").status_code == 401
     assert otro.post("api/auth.php", {"codigo": codigo}, "verificar_2fa").ok
     assert otro.yo()["usuario"]["email"] == u["email"]
-
-
-def test_segundo_paso_por_sms_requiere_telefono_verificado(como, nuevo_usuario):
-    u = nuevo_usuario("alumno", telefono=TELEFONO)
-    c = como(u)
-    confirmar(c)
-    assert c.post("api/auth.php", {"metodo": "sms"}, "segundo_factor").status_code == 409
 
 
 def test_admin_solo_usa_la_app(como, nuevo_usuario):

@@ -57,14 +57,12 @@ switch ($orden) {
         $opciones = array_slice($argv, 6);
         $conTotp = in_array('2fa', $opciones, true);
         $nuevo = in_array('nuevo', $opciones, true);
-        $tel = null;
-        foreach ($opciones as $o) if (str_starts_with($o, 'tel=')) $tel = substr($o, 4);
         $secreto = $conTotp ? totpNuevoSecreto() : null;
-        db()->prepare('INSERT INTO usuarios (nombre, email, password_hash, rol, totp_secreto, totp_activo, telefono, requiere_verificar) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        db()->prepare('INSERT INTO usuarios (nombre, email, password_hash, rol, totp_secreto, totp_activo, requiere_verificar) VALUES (?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), password_hash = VALUES(password_hash), rol = VALUES(rol), estado = "activo",
             totp_secreto = VALUES(totp_secreto), totp_activo = VALUES(totp_activo), totp_ultimo = NULL, totp_recuperacion = NULL,
-            telefono = VALUES(telefono), requiere_verificar = VALUES(requiere_verificar)')
-            ->execute([$nombre, strtolower($email), hashContrasena($pass), $rol, $secreto ? cifrar($secreto) : null, $conTotp ? 1 : 0, $tel, $nuevo ? 1 : 0]);
+            requiere_verificar = VALUES(requiere_verificar)')
+            ->execute([$nombre, strtolower($email), hashContrasena($pass), $rol, $secreto ? cifrar($secreto) : null, $conTotp ? 1 : 0, $nuevo ? 1 : 0]);
         $id = (int)db()->query('SELECT id FROM usuarios WHERE email = ' . db()->quote(strtolower($email)))->fetchColumn();
         echo json_encode(['id' => $id, 'email' => strtolower($email), 'secreto' => $secreto]), "\n";
         break;
@@ -77,6 +75,6 @@ switch ($orden) {
         break;
 
     default:
-        fwrite(STDERR, "Uso: reiniciar | limites | caducar <id> | sql \"SELECT…\" | usuario <rol> <correo> <nombre> <contraseña> [2fa] [tel=…] [nuevo]\n");
+        fwrite(STDERR, "Uso: reiniciar | limites | caducar <id> | sql \"SELECT…\" | usuario <rol> <correo> <nombre> <contraseña> [2fa] [nuevo]\n");
         exit(1);
 }

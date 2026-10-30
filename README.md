@@ -38,7 +38,7 @@ Después de reiniciar la PC solo hace falta el paso 1: los servicios `estudio-tu
 | `make auditoria-deps` | Buscar vulnerabilidades conocidas en las dependencias de Python |
 | `/opt/lampp/bin/php bin/migrar.php` | Crear o actualizar las tablas (`sql/*.sql`) |
 | `/opt/lampp/bin/php bin/crear-admin.php correo "Nombre" [contraseña]` | Crear o restablecer un admin |
-| `/opt/lampp/bin/php bin/probar-mensaje.php correo\|sms destino` | Probar el envío de códigos por correo o SMS |
+| `/opt/lampp/bin/php bin/probar-mensaje.php destino@correo.com` | Probar el envío de códigos por correo |
 
 ## Base de datos (IONOS)
 
@@ -54,7 +54,7 @@ Cada consulta tarda ~150 ms de ida y vuelta. Por eso la API usa conexión persis
 
 | Archivo | Contenido |
 |---|---|
-| `config/config.local.php` | Credenciales de la BD, API key de Gemini y envío de correo/SMS (`mensajes`, ver `docs/operacion.md`). Plantilla: `config/config.ejemplo.php` |
+| `config/config.local.php` | Credenciales de la BD, API key de Gemini y envío de correo (`mensajes`, ver `docs/operacion.md`). Plantilla: `config/config.ejemplo.php` |
 | `config/tunel.local.json` | Usuario y contraseña SSH de IONOS para el túnel |
 | `config/admin-inicial.txt` | Contraseña del primer admin (solo en una instalación nueva). **Cámbiala** en *Mi cuenta* y borra este archivo |
 
@@ -86,7 +86,7 @@ En *Panel de control → Guías de examen* el admin sube manuales o guías (PDF,
 | Profesor | Lo de alumno + postularse a una materia; con la postulación aprobada abre cursos, sube material, crea actividades, califica, genera exámenes con IA y ve resultados y estadísticas |
 | Admin | Todo + panel de control (`panel.html`) |
 
-Al registrarse se elige alumno o profesor (y opcionalmente se da un teléfono para recibir códigos por SMS). Los admin solo se crean con `bin/crear-admin.php` o desde el panel.
+Al registrarse se elige alumno o profesor. Los admin solo se crean con `bin/crear-admin.php` o desde el panel.
 
 ## Cómo funciona el procesamiento de archivos
 
@@ -120,7 +120,7 @@ public/      lo único que sirve Apache (htdocs/estudio → estudio/public)
              · subir.js · examen.js · banco.js · una por página
   api/       endpoints PHP: auth, materias, archivos, subir, archivo, ia, cursos, admin, visita, salud
 src/         PHP compartido por los endpoints: comun.php (sesión, CSRF, roles), db.php, archivos.php,
-             codigos.php (códigos de verificación), mensajes.php (correo SMTP y SMS)
+             codigos.php (códigos de verificación), mensajes.php (correo SMTP)
 config/      config.php (+ config.local.php y tunel.local.json, fuera de git)
 procesador/  worker.py + procesadores/ (Python, venv en procesador/.venv)
 sql/         esquema y datos iniciales
@@ -135,13 +135,13 @@ docs/        arquitectura y operación
 - Contraseñas con bcrypt (costo fijo 12) y política: mínimo 10 caracteres, sin las 10 000 más comunes ni el nombre o correo.
 - Verificación en dos pasos (TOTP) en «Mi cuenta»; **obligatoria para admin** (sin ella no hay privilegios de admin).
   El secreto se guarda cifrado con `app_key` (AES-256-GCM) y hay 10 códigos de recuperación de un solo uso.
-- Alumnos y profesores pueden usar en su lugar un **código por correo o SMS** al entrar (solo con ese contacto verificado).
+- Alumnos y profesores pueden usar en su lugar un **código por correo** al entrar (solo con el correo verificado).
   Los admin solo usan la app.
 - **Códigos de verificación** (`src/codigos.php`): 6 dígitos, se guarda solo su HMAC con `app_key`, caducan a los 10 min,
-  se usan una vez, 5 intentos por código, 60 s entre envíos y tope por cuenta (más bajo para SMS) y por conexión.
-  Sirven para verificar el correo o el teléfono, para el segundo paso al entrar y para «¿Olvidaste tu contraseña?»
+  se usan una vez, 5 intentos por código, 60 s entre envíos y tope por cuenta y por conexión.
+  Sirven para verificar el correo, para el segundo paso al entrar y para «¿Olvidaste tu contraseña?»
   (que responde igual, y en el mismo tiempo, exista o no la cuenta).
-- Al registrarse se pide el teléfono (opcional). Las cuentas nuevas deben verificar su correo o su teléfono antes de
+- Las cuentas nuevas deben verificar su correo antes de
   subir, postularse o inscribirse; las que existían antes de esto no se bloquean (`requiere_verificar = 0`).
 - Sesión: cookie `Secure` + HttpOnly + SameSite=Lax, regenerada al entrar y al cambiar de rol; caduca a los 30 min sin uso
   y a las 12 h (2 h para admin). Cambiar o restablecer la contraseña, o suspender la cuenta, cierra las demás sesiones.

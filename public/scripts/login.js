@@ -52,7 +52,7 @@ function irDestino() {
   location.href = destino && /^[a-z]+\.html([?#][\w=&%#.-]*)?$/.test(destino) ? destino : "index.html";
 }
 
-// Segundo paso del inicio de sesión: código de la app de autenticación (TOTP) o enviado por correo o SMS.
+// Segundo paso del inicio de sesión: código de la app de autenticación (TOTP) o enviado por correo.
 const formCodigo = document.getElementById("formCodigo");
 function pedirCodigo(r = {}) {
   formEntrar.hidden = formRegistro.hidden = true;
@@ -69,7 +69,7 @@ function pedirCodigo(r = {}) {
     API.olvidarToken();
   };
   const caja = document.getElementById("cajaCodigo");
-  if (r.metodo === "correo" || r.metodo === "sms") {
+  if (r.metodo === "correo") {
     document.getElementById("textoCodigo").textContent = "Tu cuenta pide un código además de la contraseña.";
     return flujoCodigo(caja, {
       id: "codigoEntrar", enviado: r.destino ? r : null, verificar, alTerminar: irDestino,
@@ -86,11 +86,11 @@ function pedirCodigo(r = {}) {
   }).enfocar();
 }
 
-// «¿Olvidaste tu contraseña?»: correo → código (correo o SMS) → contraseña nueva → volver a entrar.
+// «¿Olvidaste tu contraseña?»: correo → código → contraseña nueva → volver a entrar.
 const secRecuperar = document.getElementById("recuperar");
 const formRecuperar = document.getElementById("formRecuperar");
 const cajaRecuperar = document.getElementById("cajaRecuperar");
-document.getElementById("olvide").addEventListener("click", async () => {
+document.getElementById("olvide").addEventListener("click", () => {
   formEntrar.hidden = true;
   document.querySelector('[role="tablist"]').hidden = true;
   document.getElementById("tituloAcceso").textContent = "Recupera tu cuenta";
@@ -98,9 +98,6 @@ document.getElementById("olvide").addEventListener("click", async () => {
   cajaRecuperar.innerHTML = "";
   document.getElementById("emailRecuperar").value = document.getElementById("emailEntrar").value.trim();
   document.getElementById("emailRecuperar").focus();
-  const yo = await Sesion.yo();
-  document.getElementById("canalRecuperar").hidden = !yo.sms || !yo.correo;
-  formRecuperar.querySelector(`[name="canalRecuperar"][value="${yo.correo ? "correo" : "sms"}"]`).checked = true;
 });
 function volverAEntrar(email = "", aviso = "") {
   secRecuperar.hidden = true;
@@ -119,11 +116,10 @@ formRecuperar.addEventListener("submit", e => {
   formRecuperar.querySelector(".form__mensaje").textContent = error;
   if (error) return;
   const email = document.getElementById("emailRecuperar").value.trim();
-  const canal = formRecuperar.querySelector('[name="canalRecuperar"]:checked').value;
   formRecuperar.hidden = true;
   flujoCodigo(cajaRecuperar, {
     id: "codigoRecuperar",
-    enviar: () => API.post("auth.php", { email, canal }, { accion: "recuperar_enviar" }),
+    enviar: () => API.post("auth.php", { email }, { accion: "recuperar_enviar" }),
     verificar: codigo => API.post("auth.php", { email, codigo }, { accion: "recuperar_verificar" }),
     alTerminar: () => nuevaContrasena(email)
   });
@@ -156,7 +152,6 @@ function nuevaContrasena(email) {
 }
 
 const esCorreo = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-const esTelefono = v => /^(\d{10}|\+[1-9]\d{7,14})$/.test(v.replace(/[\s().-]/g, ""));
 const PASSWORD_MIN = 10;
 
 formEntrar.addEventListener("submit", e => {
@@ -170,8 +165,8 @@ formEntrar.addEventListener("submit", e => {
 // Con sesión iniciada, la página muestra «Tu cuenta» con el cambio de contraseña.
 (async () => {
   const yo = await Sesion.yo();
-  document.getElementById("olvide").hidden = !yo.correo && !yo.sms;
-  if (yo.pendiente_2fa) return pedirCodigo(yo.pendiente ? { metodo: yo.pendiente.canal, ...yo.pendiente } : {});
+  document.getElementById("olvide").hidden = !yo.correo;
+  if (yo.pendiente_2fa) return pedirCodigo(yo.pendiente ? { metodo: "correo", ...yo.pendiente } : {});
   if (!yo.usuario) return;
   document.getElementById("tituloAcceso").textContent = "Tu cuenta";
   document.querySelector('[role="tablist"]').hidden = true;
@@ -199,7 +194,7 @@ formEntrar.addEventListener("submit", e => {
 })();
 
 // Manda un código (enviar) y muestra el input OTP con «Reenviar» y su cuenta regresiva.
-// enviar() → { canal, destino, reenviar_en }; verificar(codigo) lanza un Error si no es correcto.
+// enviar() → { destino, reenviar_en }; verificar(codigo) lanza un Error si no es correcto.
 // Con `enviado` (la respuesta de un envío que ya ocurrió) no vuelve a mandar al abrir.
 function flujoCodigo(caja, { id, enviar, verificar, alTerminar, enviado = null, alternativo = false }) {
   caja.innerHTML = `
@@ -224,7 +219,7 @@ function flujoCodigo(caja, { id, enviar, verificar, alTerminar, enviado = null, 
   }
   function mostrar(r) {
     if (r.mensaje) { destino.textContent = r.mensaje; return esperar(r.reenviar_en); }
-    destino.textContent = `Te mandamos un código de 6 dígitos ${r.canal === "sms" ? "por SMS al" : "a"} ${r.destino}. Caduca en 10 minutos.`;
+    destino.textContent = `Te mandamos un código de 6 dígitos a ${r.destino}. Caduca en 10 minutos.`;
     esperar(r.reenviar_en);
   }
   async function mandar() {
@@ -246,100 +241,47 @@ function flujoCodigo(caja, { id, enviar, verificar, alTerminar, enviado = null, 
   if (enviado) mostrar(enviado); else mandar();
 }
 
-// Verificar el correo o el teléfono: si hay teléfono y SMS, la persona elige por dónde le llega el código.
-function verificarContacto(caja, yo, alTerminar, proposito = null) {
-  const u = yo.usuario;
-  const puedeSms = u.telefono && !u.telefono_verificado && yo.sms;
-  if (!proposito && !yo.correo) proposito = "verificar_telefono";
-  const iniciar = p => flujoCodigo(caja, {
-    id: p === "verificar_correo" ? "codigoCorreo" : "codigoTelefono",
-    enviar: () => API.post("auth.php", { proposito: p }, { accion: "codigo_enviar" }),
-    verificar: codigo => API.post("auth.php", { proposito: p, codigo }, { accion: "codigo_verificar" }),
+// Verificar el correo de la cuenta.
+function verificarCorreo(caja, alTerminar) {
+  flujoCodigo(caja, {
+    id: "codigoCorreo",
+    enviar: () => API.post("auth.php", { proposito: "verificar_correo" }, { accion: "codigo_enviar" }),
+    verificar: codigo => API.post("auth.php", { proposito: "verificar_correo", codigo }, { accion: "codigo_verificar" }),
     alTerminar
   });
-  if (proposito || !puedeSms || u.email_verificado) return iniciar(proposito || (u.email_verificado ? "verificar_telefono" : "verificar_correo"));
-  caja.innerHTML = `
-    <p class="campo__etiqueta">¿Por dónde te mandamos el código?</p>
-    <div class="fila">
-      <button class="btn btn--secundario" type="button" data-p="verificar_correo">${icono("documento", "icono--16")} Correo · ${escapar(u.email)}</button>
-      <button class="btn btn--secundario" type="button" data-p="verificar_telefono">${icono("rayo", "icono--16")} SMS · ${escapar(u.telefono)}</button>
-    </div>`;
-  caja.querySelectorAll("[data-p]").forEach(b => b.addEventListener("click", () => iniciar(b.dataset.p)));
 }
 
-// Después de crear la cuenta: verificar el contacto (o dejarlo para después).
+// Después de crear la cuenta: verificar el correo (o dejarlo para después).
 async function pedirVerificacion() {
-  const yo = await Sesion.yo(true);
+  await Sesion.yo(true); // la sesión nueva trae otro token CSRF
   formEntrar.hidden = formRegistro.hidden = true;
   document.querySelector('[role="tablist"]').hidden = true;
   document.getElementById("tituloAcceso").textContent = "Verifica tu cuenta";
   document.getElementById("verificar").hidden = false;
-  verificarContacto(document.getElementById("cajaVerificar"), yo, irDestino);
+  verificarCorreo(document.getElementById("cajaVerificar"), irDestino);
 }
 document.getElementById("verificarDespues").addEventListener("click", irDestino);
 
-// «Mi cuenta» · correo y teléfono: estado de verificación, verificar, agregar, cambiar o quitar el teléfono.
+// «Mi cuenta» · correo: estado de verificación y verificarlo.
 function pintarContacto(yo) {
   const caja = document.getElementById("contacto");
   const u = yo.usuario;
-  const estado = ok => `<span class="chip ${ok ? "chip--ok" : "chip--aviso"}">${ok ? "Verificado" : "Sin verificar"}</span>`;
   caja.innerHTML = `
-    ${u.requiere_verificar && !u.email_verificado && !u.telefono_verificado && (yo.correo || yo.sms)
-      ? '<p class="nota nota--aviso"><span class="rotulo">Pendiente</span><span>Verifica tu correo o tu teléfono para subir material, postularte e inscribirte a cursos.</span></p>' : ""}
+    ${u.requiere_verificar && !u.email_verificado && yo.correo
+      ? '<p class="nota nota--aviso"><span class="rotulo">Pendiente</span><span>Verifica tu correo para subir material, postularte e inscribirte a cursos.</span></p>' : ""}
     <ul class="filas">
       <li><div class="filas__principal"><span class="filas__meta">Correo</span><span class="filas__titulo">${escapar(u.email)}</span></div>
-        <div class="fila">${estado(u.email_verificado)}
-        ${u.email_verificado || !yo.correo ? "" : '<button class="btn btn--secundario btn--sm" type="button" data-verificar="verificar_correo">Verificar</button>'}</div></li>
-      <li><div class="filas__principal"><span class="filas__meta">Teléfono</span><span class="filas__titulo">${u.telefono ? escapar(u.telefono) : "Sin teléfono"}</span></div>
-        <div class="fila">${u.telefono ? estado(u.telefono_verificado) : ""}
-        ${u.telefono && !u.telefono_verificado && yo.sms ? '<button class="btn btn--secundario btn--sm" type="button" data-verificar="verificar_telefono">Verificar</button>' : ""}
-        <button class="btn btn--secundario btn--sm" type="button" data-telefono>${u.telefono ? "Cambiar" : "Agregar"}</button>
-        ${u.telefono ? '<button class="btn btn--peligro btn--sm" type="button" data-quitar>Quitar</button>' : ""}</div></li>
+        <div class="fila"><span class="chip ${u.email_verificado ? "chip--ok" : "chip--aviso"}">${u.email_verificado ? "Verificado" : "Sin verificar"}</span>
+        ${u.email_verificado || !yo.correo ? "" : '<button class="btn btn--secundario btn--sm" type="button" data-verificar>Verificar</button>'}</div></li>
     </ul>
     <div data-flujo></div>`;
-  const flujo = caja.querySelector("[data-flujo]");
-  const repintar = async () => { const nuevo = await Sesion.yo(true); pintarContacto(nuevo); pintarDosPasos(nuevo); };
-
-  caja.querySelectorAll("[data-verificar]").forEach(b => b.addEventListener("click", () =>
-    verificarContacto(flujo, yo, () => { avisar("Listo: quedó verificado."); repintar(); }, b.dataset.verificar)));
-
-  caja.querySelector("[data-quitar]")?.addEventListener("click", async () => {
-    if (!confirm("¿Quitar tu teléfono? Ya no podrás recibir códigos por SMS.")) return;
-    try { await API.post("auth.php", { telefono: "" }, { accion: "telefono_guardar" }); avisar("Teléfono quitado."); repintar(); }
-    catch (err) { avisar(err.message, "error"); }
-  });
-
-  caja.querySelector("[data-telefono]").addEventListener("click", () => {
-    flujo.innerHTML = `
-      <form class="form" novalidate data-form-telefono>
-        <div class="campo"><label for="telCuenta">Teléfono</label>
-          <input type="tel" id="telCuenta" autocomplete="tel" inputmode="tel" maxlength="20" required>
-          <span class="campo__ayuda">10 dígitos, o con el código de país si no es de México (+1…).</span></div>
-        <p class="form__mensaje form__mensaje--error" role="alert"></p>
-        <div class="form__acciones" style="justify-content: flex-start">
-          <button class="btn btn--primario" type="submit">Guardar teléfono</button>
-          <button class="btn btn--secundario" type="button" data-cancelar>Cancelar</button>
-        </div>
-      </form>`;
-    const form = flujo.querySelector("form");
-    form.querySelector("[data-cancelar]").addEventListener("click", () => { flujo.innerHTML = ""; });
-    form.addEventListener("submit", async e => {
-      e.preventDefault();
-      const error = validar(form, [["telCuenta", v => v !== "" && esTelefono(v), "Escribe tu teléfono a 10 dígitos, por ejemplo 55 1234 5678."]]);
-      form.querySelector(".form__mensaje").textContent = error;
-      if (error) return;
-      try {
-        await API.post("auth.php", { telefono: form.querySelector("#telCuenta").value.trim() }, { accion: "telefono_guardar" });
-        avisar("Teléfono guardado.");
-        const nuevo = await Sesion.yo(true);
-        pintarContacto(nuevo);
-        pintarDosPasos(nuevo);
-        // Si se puede, se ofrece verificarlo de una vez.
-        if (nuevo.sms) verificarContacto(document.querySelector("#contacto [data-flujo]"), nuevo, () => { avisar("Listo: quedó verificado."); repintar(); }, "verificar_telefono");
-      } catch (err) { form.querySelector(".form__mensaje").textContent = err.message; }
-    });
-    form.querySelector("#telCuenta").focus();
-  });
+  caja.querySelector("[data-verificar]")?.addEventListener("click", () =>
+    verificarCorreo(caja.querySelector("[data-flujo]"), async () => {
+      avisar("Listo: quedó verificado.");
+      const nuevo = await Sesion.yo(true);
+      pintarContacto(nuevo);
+      pintarDosPasos(nuevo);
+    }));
 }
 
 // «Mi cuenta» · verificación en dos pasos: activar con QR, códigos de recuperación y (si no es admin) desactivar.
@@ -358,22 +300,21 @@ function pintarDosPasos(yo) {
   const u = yo.usuario;
   const porCodigo = u.segundo_factor
     ? `<p class="nota nota--ok"><span class="rotulo">Activa</span><span>Al entrar te mandaremos un código
-        ${u.segundo_factor === "sms" ? `por SMS al ${escapar(u.telefono)}` : `a tu correo ${escapar(u.email)}`}.</span></p>
+        a tu correo ${escapar(u.email)}.</span></p>
        <div class="form__acciones" style="justify-content: flex-start"><button class="btn btn--secundario" type="button" data-sin-codigo>Desactivar</button></div>`
     : "";
   caja.innerHTML = `
     ${yo.rol === "admin" ? '<p class="nota nota--aviso"><span class="rotulo">Obligatoria</span><span>Las cuentas de admin necesitan la verificación en dos pasos para usar el panel de control.</span></p>' : ""}
     ${porCodigo}
-    <p class="texto-2">${u.segundo_factor ? "¿Prefieres una app? Es más segura que el SMS y funciona sin señal: " : "Además de tu contraseña, "}te pediremos
+    <p class="texto-2">${u.segundo_factor ? "¿Prefieres una app? Es más segura que el correo y funciona sin internet: " : "Además de tu contraseña, "}te pediremos
       un código de una app como Google Authenticator, Microsoft Authenticator o Aegis. Así, aunque alguien sepa tu contraseña, no podrá entrar.</p>
     <div class="form__acciones" style="justify-content: flex-start"><button class="btn btn--secundario" type="button" data-iniciar>${u.segundo_factor ? "Usar una app de autenticación" : "Activar verificación en dos pasos"}</button></div>
-    ${yo.rol !== "admin" && !u.segundo_factor && (yo.correo || yo.sms) ? `
-      <p class="texto-2">¿No tienes una app? También podemos mandarte el código por ${[yo.correo && "correo", yo.sms && "SMS"].filter(Boolean).join(" o ")} cada vez que entres.</p>
+    ${yo.rol !== "admin" && !u.segundo_factor && yo.correo ? `
+      <p class="texto-2">¿No tienes una app? También podemos mandarte el código por correo cada vez que entres.</p>
       <div class="fila">
-        ${yo.correo ? `<button class="btn btn--secundario btn--sm" type="button" data-codigo="correo"${u.email_verificado ? "" : " disabled"}>Código por correo</button>` : ""}
-        ${yo.sms ? `<button class="btn btn--secundario btn--sm" type="button" data-codigo="sms"${u.telefono_verificado ? "" : " disabled"}>Código por SMS</button>` : ""}
+        <button class="btn btn--secundario btn--sm" type="button" data-codigo="correo"${u.email_verificado ? "" : " disabled"}>Código por correo</button>
       </div>
-      ${(yo.correo && !u.email_verificado) || (yo.sms && !u.telefono_verificado) ? '<span class="campo__ayuda">Solo se puede usar un correo o teléfono verificado (arriba, en «Correo y teléfono»).</span>' : ""}` : ""}`;
+      ${u.email_verificado ? "" : '<span class="campo__ayuda">Primero verifica tu correo (arriba, en «Correo»).</span>'}` : ""}`;
   const repintar = async () => { const nuevo = await Sesion.yo(true); pintarContacto(nuevo); pintarDosPasos(nuevo); };
   caja.querySelectorAll("[data-codigo]").forEach(b => b.addEventListener("click", async () => {
     try { await API.post("auth.php", { metodo: b.dataset.codigo }, { accion: "segundo_factor" }); avisar("Listo: al entrar te pediremos un código."); repintar(); }
@@ -424,12 +365,10 @@ formRegistro.addEventListener("submit", e => {
     () => ({
       nombre: document.getElementById("nombreRegistro").value.trim(),
       email: document.getElementById("emailRegistro").value.trim(),
-      telefono: document.getElementById("telRegistro").value.trim(),
       password: document.getElementById("passRegistro").value,
       rol: formRegistro.querySelector('[name="rol"]:checked').value
     }),
     [["nombreRegistro", v => v.length >= 2, "Escribe tu nombre completo."],
      ["emailRegistro", esCorreo, "Escribe un correo válido, por ejemplo nombre@gmail.com."],
-     ["telRegistro", v => v === "" || esTelefono(v), "Escribe tu teléfono a 10 dígitos (por ejemplo 55 1234 5678) o déjalo vacío."],
      ["passRegistro", v => v.length >= PASSWORD_MIN, `La contraseña debe tener al menos ${PASSWORD_MIN} caracteres.`]]);
 });

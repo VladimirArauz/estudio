@@ -92,21 +92,19 @@ def test_admin_activa_2fa_desde_mi_cuenta(pagina, nuevo_usuario):
     expect(pagina.locator("#panelAdmin .kpis")).to_be_visible()
 
 
-# ───── Códigos por correo o SMS e input OTP ─────
+# ───── Códigos por correo e input OTP ─────
 
-def test_registro_con_telefono_verifica_por_sms(pagina):
+def test_registro_verifica_el_correo(pagina):
+    correo = f"sofia{time.time_ns()}@pruebas.test"
     ir(pagina, "login.html#registro")
     pagina.fill("#nombreRegistro", "Sofía Prueba")
-    pagina.fill("#emailRegistro", f"sofia{time.time_ns()}@pruebas.test")
-    pagina.fill("#telRegistro", "55 8765 4321")
+    pagina.fill("#emailRegistro", correo)
     pagina.fill("#passRegistro", CONTRASENA)
     pagina.click("#formRegistro [type=submit]")
-    pagina.click("#cajaVerificar [data-p=verificar_telefono]")
-    expect(pagina.locator("#cajaVerificar")).to_contain_text("por SMS al •••• 4321")
-    escribir_codigo(pagina, "#codigoTelefono", ultimo_codigo("+525587654321"))
+    expect(pagina.locator("#cajaVerificar")).to_contain_text("Te mandamos un código de 6 dígitos a s•••@pruebas.test")
+    escribir_codigo(pagina, "#codigoCorreo", ultimo_codigo(correo))
     pagina.wait_for_url(re.compile(r".*/index\.html"))
     ir(pagina, "login.html")
-    expect(pagina.locator("#contacto")).to_contain_text("•••• 4321")
     expect(pagina.locator("#contacto .chip--ok")).to_have_count(1)
 
 
@@ -114,7 +112,7 @@ def test_codigo_incorrecto_en_rojo_y_pegar_el_codigo(pagina, nuevo_usuario):
     u = nuevo_usuario("alumno")
     entrar_ui(pagina, u)
     ir(pagina, "login.html")
-    pagina.click('#contacto [data-verificar="verificar_correo"]')
+    pagina.click("#contacto [data-verificar]")
     expect(pagina.locator("#contacto")).to_contain_text("Te mandamos un código")
     codigo = ultimo_codigo(u["email"])
     malo = f"{(int(codigo) + 1) % 1_000_000:06d}"

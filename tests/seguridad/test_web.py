@@ -62,7 +62,7 @@ def test_metodos_http_no_permitidos(metodo):
 ACCIONES_POST = [
     ("auth.php", "entrar"), ("auth.php", "registrar"), ("auth.php", "salir"), ("auth.php", "cambiar_password"),
     ("auth.php", "confirmar"), ("auth.php", "verificar_2fa"), ("auth.php", "totp_iniciar"), ("auth.php", "totp_activar"),
-    ("auth.php", "totp_desactivar"), ("auth.php", "codigo_enviar"), ("auth.php", "codigo_verificar"), ("auth.php", "telefono_guardar"),
+    ("auth.php", "totp_desactivar"), ("auth.php", "codigo_enviar"), ("auth.php", "codigo_verificar"),
     ("auth.php", "codigo_reenviar_login"), ("auth.php", "segundo_factor"), ("auth.php", "recuperar_enviar"),
     ("auth.php", "recuperar_verificar"), ("auth.php", "recuperar_cambiar"),
     ("materias.php", "crear"), ("materias.php", "editar"), ("materias.php", "borrar"),

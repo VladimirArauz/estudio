@@ -1,16 +1,16 @@
 <?php
-// Envío de correos (SMTP de IONOS con STARTTLS) y SMS (API REST de Twilio).
+// Envío de correos por SMTP con STARTTLS (Gmail con contraseña de aplicación).
 // Con mensajes.simulado (entorno de pruebas) no sale nada: cada mensaje se agrega a <storage>/buzon.jsonl.
-// Nunca se registra el texto del mensaje (lleva el código); solo el canal y el error del proveedor.
+// Nunca se registra el texto del mensaje (lleva el código); solo el error del servidor de correo.
 
 function enviarCorreo(string $para, string $asunto, string $texto, string $html): bool {
     global $CONFIG;
     $c = $CONFIG['mensajes'];
-    if (!empty($c['simulado'])) return guardarEnBuzon('correo', $para, $texto);
+    if (!empty($c['simulado'])) return guardarEnBuzon($para, $texto);
     $s = $c['smtp'];
-    if (($s['host'] ?? '') === '' || ($s['user'] ?? '') === '') return falloEnvio('correo', 'SMTP sin configurar');
+    if (($s['host'] ?? '') === '' || ($s['user'] ?? '') === '') return falloEnvio('SMTP sin configurar');
     // Evita inyección de cabeceras: ni el destino ni el asunto pueden traer saltos de línea.
-    if (!filter_var($para, FILTER_VALIDATE_EMAIL) || preg_match('/[\r\n]/', $asunto)) return falloEnvio('correo', 'destino o asunto inválido');
+    if (!filter_var($para, FILTER_VALIDATE_EMAIL) || preg_match('/[\r\n]/', $asunto)) return falloEnvio('destino o asunto inválido');
 
     $de = $s['de'] ?: $s['user'];
     $limite = 'b' . bin2hex(random_bytes(12));
@@ -39,7 +39,7 @@ function enviarCorreo(string $para, string $asunto, string $texto, string $html)
 
     $ctx = stream_context_create(['ssl' => ['verify_peer' => true, 'verify_peer_name' => true, 'peer_name' => $s['host']]]);
     $sock = @stream_socket_client("tcp://{$s['host']}:{$s['port']}", $errno, $errstr, 10, STREAM_CLIENT_CONNECT, $ctx);
-    if (!$sock) return falloEnvio('correo', "no se pudo conectar ({$errstr})");
+    if (!$sock) return falloEnvio("no se pudo conectar ({$errstr})");
     stream_set_timeout($sock, 15);
     try {
         $hola = 'EHLO ' . (gethostname() ?: 'localhost');
@@ -61,7 +61,7 @@ function enviarCorreo(string $para, string $asunto, string $texto, string $html)
         smtp($sock, 'QUIT', 221);
         return true;
     } catch (RuntimeException $e) {
-        return falloEnvio('correo', $e->getMessage());
+        return falloEnvio($e->getMessage());
     } finally {
         fclose($sock);
     }
@@ -81,33 +81,6 @@ function smtp($sock, ?string $linea, int $esperado): void {
     }
 }
 
-function enviarSms(string $telefono, string $texto): bool {
-    global $CONFIG;
-    $c = $CONFIG['mensajes'];
-    if (!empty($c['simulado'])) return guardarEnBuzon('sms', $telefono, $texto);
-    $t = $c['twilio'];
-    if (!smsDisponible()) return falloEnvio('sms', 'Twilio sin configurar');
-    if (!preg_match('/^\+[1-9]\d{7,14}$/', $telefono)) return falloEnvio('sms', 'teléfono inválido');
-
-    $ctx = stream_context_create(['http' => [
-        'method' => 'POST',
-        'header' => "Content-Type: application/x-www-form-urlencoded\r\nAuthorization: Basic " . base64_encode("{$t['sid']}:{$t['token']}") . "\r\n",
-        'content' => http_build_query(['To' => $telefono, 'From' => $t['de'], 'Body' => $texto]),
-        'timeout' => 10,
-        'ignore_errors' => true,
-    ]]);
-    $url = 'https://api.twilio.com/2010-04-01/Accounts/' . rawurlencode($t['sid']) . '/Messages.json';
-    $respuesta = @file_get_contents($url, false, $ctx);
-    if ($respuesta === false) return falloEnvio('sms', 'no se pudo conectar con Twilio');
-    $estado = 0;
-    foreach ($http_response_header ?? [] as $h) if (preg_match('#^HTTP/\S+\s+(\d{3})#', $h, $m)) $estado = (int)$m[1];
-    if ($estado !== 201) {
-        $d = json_decode($respuesta, true) ?: [];
-        return falloEnvio('sms', "Twilio {$estado} " . ($d['code'] ?? '') . ' ' . mb_substr($d['message'] ?? '', 0, 120));
-    }
-    return true;
-}
-
 // Sin buzón SMTP configurado no se mandan códigos por correo (ni se exige verificar el correo).
 function correoDisponible(): bool {
     global $CONFIG;
@@ -115,22 +88,15 @@ function correoDisponible(): bool {
     return !empty($c['simulado']) || (($c['smtp']['host'] ?? '') !== '' && ($c['smtp']['user'] ?? '') !== '' && ($c['smtp']['pass'] ?? '') !== '');
 }
 
-// El SMS solo se ofrece si hay credenciales (o en pruebas, con el buzón simulado).
-function smsDisponible(): bool {
+function guardarEnBuzon(string $destino, string $texto): bool {
     global $CONFIG;
-    $c = $CONFIG['mensajes'];
-    return !empty($c['simulado']) || (($c['twilio']['sid'] ?? '') !== '' && ($c['twilio']['token'] ?? '') !== '' && ($c['twilio']['de'] ?? '') !== '');
-}
-
-function guardarEnBuzon(string $canal, string $destino, string $texto): bool {
-    global $CONFIG;
-    $linea = json_encode(['fecha' => date('c'), 'canal' => $canal, 'destino' => $destino, 'texto' => $texto], JSON_UNESCAPED_UNICODE);
+    $linea = json_encode(['fecha' => date('c'), 'destino' => $destino, 'texto' => $texto], JSON_UNESCAPED_UNICODE);
     return file_put_contents($CONFIG['subidas']['dir'] . '/buzon.jsonl', $linea . "\n", FILE_APPEND | LOCK_EX) !== false;
 }
 
-function falloEnvio(string $canal, string $motivo): bool {
-    error_log("[estudio] Envío por {$canal} falló: {$motivo}");
-    if (function_exists('registrar')) registrar('envio_fallido', $canal, null, ['motivo' => mb_substr($motivo, 0, 200)]);
+function falloEnvio(string $motivo): bool {
+    error_log("[estudio] Envío de correo falló: {$motivo}");
+    if (function_exists('registrar')) registrar('envio_fallido', 'correo', null, ['motivo' => mb_substr($motivo, 0, 200)]);
     return false;
 }
 

@@ -110,8 +110,8 @@ function usuario(): ?array {
     if ($guardado && $guardado['id'] === (int)$_SESSION['uid'] && $ahora - ($_SESSION['usuario_t'] ?? 0) < 60) {
         return $cache = $guardado;
     }
-    $st = db()->prepare('SELECT id, nombre, email, rol, estado, sesion_version, totp_activo, telefono, email_verificado IS NOT NULL email_verificado,
-                                telefono_verificado IS NOT NULL telefono_verificado, requiere_verificar, segundo_factor FROM usuarios WHERE id = ?');
+    $st = db()->prepare('SELECT id, nombre, email, rol, estado, sesion_version, totp_activo, email_verificado IS NOT NULL email_verificado,
+                                requiere_verificar, segundo_factor FROM usuarios WHERE id = ?');
     $st->execute([$_SESSION['uid']]);
     $u = $st->fetch();
     // La versión sube al cambiar o restablecer la contraseña y al suspender: cierra las demás sesiones.
@@ -120,7 +120,7 @@ function usuario(): ?array {
         return null;
     }
     $u['id'] = (int)$u['id'];
-    foreach (['totp_activo', 'email_verificado', 'telefono_verificado', 'requiere_verificar'] as $c) $u[$c] = (bool)$u[$c];
+    foreach (['totp_activo', 'email_verificado', 'requiere_verificar'] as $c) $u[$c] = (bool)$u[$c];
     unset($u['sesion_version']);
     if ($guardado && $guardado['rol'] !== $u['rol']) session_regenerate_id(true); // cambio de privilegios
     $_SESSION['usuario'] = $u;
@@ -152,13 +152,13 @@ function excedeLimite(string $clave, int $max, int $segundos): bool {
     return (int)valor('SELECT conteo FROM limites WHERE clave = ?', [$clave]) > $max;
 }
 
-// Las cuentas nuevas deben verificar su correo o su teléfono antes de subir, postularse o inscribirse.
+// Las cuentas nuevas deben verificar su correo antes de subir, postularse o inscribirse.
 // Las que ya existían antes de la verificación tienen requiere_verificar = 0 y no se bloquean.
-// Si no hay por dónde mandar códigos (sin SMTP ni SMS configurados), no se exige.
+// Si no hay por dónde mandar códigos (sin SMTP configurado), no se exige.
 function requiereVerificado(array $u): void {
-    if (!correoDisponible() && !smsDisponible()) return;
-    if (!empty($u['requiere_verificar']) && empty($u['email_verificado']) && empty($u['telefono_verificado'])) {
-        responder(['error' => 'Verifica tu correo o tu teléfono para continuar. Hazlo en «Mi cuenta».', 'code' => 'VERIFICAR'], 403);
+    if (!correoDisponible()) return;
+    if (!empty($u['requiere_verificar']) && empty($u['email_verificado'])) {
+        responder(['error' => 'Verifica tu correo para continuar. Hazlo en «Mi cuenta».', 'code' => 'VERIFICAR'], 403);
     }
 }
 

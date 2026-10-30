@@ -1,5 +1,8 @@
 # Plan: códigos de verificación (correo/SMS), input OTP animado y pantallas esqueleto
 
+> **Nota (2026-10-29):** el SMS y el teléfono se descartaron después de este plan; los códigos solo se mandan por correo
+> (Gmail). Ver `sql/007_sin_sms.sql`. Lo que este documento dice del SMS, Twilio o el teléfono es historia.
+
 Origen: dos reels de Instagram.
 
 | Reel | Qué dice | Cómo se aplica aquí |
